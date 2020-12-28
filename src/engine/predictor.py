@@ -11,7 +11,9 @@ from src.utils import load_class
 
 
 def build_model(model_conf: DictConfig):
-    return load_class(module=Net, name=model_conf.type, args={"model_config": model_conf})
+    return load_class(
+        module=Net, name=model_conf.type, args={"model_config": model_conf}
+    )
 
 
 class Predictor(torch.nn.Module):

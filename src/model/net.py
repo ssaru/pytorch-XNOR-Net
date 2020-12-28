@@ -119,23 +119,29 @@ class BinarizedConvBlock(nn.Module):
 
 
 def _build_conv_layers(conv_layers_config):
-    return nn.ModuleList([BinarizedConvBlock(**params) for params in conv_layers_config])
+    return nn.ModuleList(
+        [BinarizedConvBlock(**params) for params in conv_layers_config]
+    )
 
 
 def _build_linear_layers(linear_layers_config):
-    return nn.ModuleList([BinarizedLinearBlock(**params) for params in linear_layers_config])
+    return nn.ModuleList(
+        [BinarizedLinearBlock(**params) for params in linear_layers_config]
+    )
 
 
 def _build_output_layer(output_layer_config):
-    return load_class(module=nn, name=output_layer_config["type"], args=output_layer_config["args"])
+    return load_class(
+        module=nn, name=output_layer_config["type"], args=output_layer_config["args"]
+    )
 
 
 class BinaryLinear(nn.Module):
     """rThe MLP we train on MNIST consists in 3 hidden layers of 1024 Rectifier
     Linear Units (ReLU) and a L2-SVM output layer.
-    The square hinge loss is minimized with SGD without momentum. 
-    We use an exponentially decaying learning rate. 
-    We use Batch Normalization with a minibatch of size 200 to speed up the training. 
+    The square hinge loss is minimized with SGD without momentum.
+    We use an exponentially decaying learning rate.
+    We use Batch Normalization with a minibatch of size 200 to speed up the training.
 
     Refs: https://arxiv.org/pdf/1511.00363.pdf
     """
@@ -204,7 +210,9 @@ class BinaryLinear(nn.Module):
         # torchsummary only supported [cuda, cpu]. not cuda:0
         device = str(self.device).split(":")[0]
         torch_summary(
-            self, input_size=(self._channels, self._height, self._width), device=device,
+            self,
+            input_size=(self._channels, self._height, self._width),
+            device=device,
         )
 
     @property
@@ -214,23 +222,25 @@ class BinaryLinear(nn.Module):
         }
         if len(devices) != 1:
             raise RuntimeError(
-                "Cannot determine device: {} different devices found".format(len(devices))
+                "Cannot determine device: {} different devices found".format(
+                    len(devices)
+                )
             )
         return next(iter(devices))
 
 
 class BinaryConv(nn.Module):
-    """rWe preprocess the data using global contrast normalization and ZCA whitening. 
+    """rWe preprocess the data using global contrast normalization and ZCA whitening.
     We do not use any data-augmentation
-    
+
     The architecture of our CNN is:
     (2×128C3)−MP2−(2×256C3)−MP2−(2×512C3)−MP2−(2×1024FC)−10SV M (5)
 
     Where C3 is a 3 × 3 ReLU convolution layer, MP2 is a 2 × 2 max-pooling layer, FC a fully
-    connected layer, and SVM a L2-SVM output layer. 
-    
-    The square hinge loss is minimized with ADAM. 
-    We use an exponentially decaying learning rate. 
+    connected layer, and SVM a L2-SVM output layer.
+
+    The square hinge loss is minimized with ADAM.
+    We use an exponentially decaying learning rate.
     We use Batch Normalization with a minibatch of size 50 to speed up the training
 
     Refs: https://arxiv.org/pdf/1511.00363.pdf
@@ -306,7 +316,9 @@ class BinaryConv(nn.Module):
         # torchsummary only supported [cuda, cpu]. not cuda:0
         device = str(self.device).split(":")[0]
         torch_summary(
-            self, input_size=(self._channels, self._height, self._width), device=device,
+            self,
+            input_size=(self._channels, self._height, self._width),
+            device=device,
         )
 
     @property
@@ -316,6 +328,8 @@ class BinaryConv(nn.Module):
         }
         if len(devices) != 1:
             raise RuntimeError(
-                "Cannot determine device: {} different devices found".format(len(devices))
+                "Cannot determine device: {} different devices found".format(
+                    len(devices)
+                )
             )
         return next(iter(devices))
