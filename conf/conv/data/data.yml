@@ -1,0 +1,15 @@
+data:
+  dataset:
+    type: CIFAR10
+    params:
+      root: data/
+      train: null
+      transform: null
+      target_transform: null
+      download: true
+
+  dataloader:
+    type: DataLoader
+    params:
+      num_workers: 48
+      batch_size: 128 # 50 in paper
