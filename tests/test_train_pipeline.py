@@ -4,13 +4,12 @@ import sys
 import pytest
 import pytorch_lightning
 import torch
-from omegaconf import OmegaConf
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer
 
-from src.nn.binarized_conv2d import BinarizedConv2d
 from src.engine.train_jig import TrainingContainer
-from src.utils import get_data_loaders, build_model, get_config
+from src.nn.binarized_conv2d import BinarizedConv2d
+from src.utils import build_model, get_config, get_data_loaders
 
 
 @pytest.fixture(scope="module")
@@ -59,7 +58,9 @@ def test_train_pipeline(fix_seed, config, gpus):
 
     train_dataloader, test_dataloader = get_data_loaders(config=config.data)
     model = build_model(model_conf=config.model)
-    training_container = TrainingContainer(model=model, config=config.training_container)
+    training_container = TrainingContainer(
+        model=model, config=config.training_container
+    )
 
     trainer_params = dict(config.trainer.params)
     trainer_params["limit_train_batches"] = 0.1
@@ -72,5 +73,7 @@ def test_train_pipeline(fix_seed, config, gpus):
     trainer = Trainer(**trainer_params)
 
     trainer.fit(
-        model=training_container, train_dataloader=train_dataloader, val_dataloaders=test_dataloader
+        model=training_container,
+        train_dataloader=train_dataloader,
+        val_dataloaders=test_dataloader,
     )

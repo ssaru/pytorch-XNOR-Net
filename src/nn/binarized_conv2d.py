@@ -2,6 +2,7 @@ from typing import Optional, Tuple, Union
 
 import torch
 from torch.nn.modules.utils import _pair
+
 from src.ops.binarized_conv2d import binarized_conv2d
 
 
@@ -75,9 +76,9 @@ class BinarizedConv2d(torch.nn.Conv2d):
 
     def clipping(self):
         """
-        Since the binarization operation is not influenced by variations of the real-valued weights w 
-        when its magnitude is beyond the binary values ±1, and since it is a common practice to bound weights (usually the weight vector) in order to regularize them, 
-        we have chosen to clip the real-valued weights within the [−1, 1] interval right after the weight updates, 
+        Since the binarization operation is not influenced by variations of the real-valued weights w
+        when its magnitude is beyond the binary values ±1, and since it is a common practice to bound weights (usually the weight vector) in order to regularize them,
+        we have chosen to clip the real-valued weights within the [−1, 1] interval right after the weight updates,
         """
         with torch.no_grad():
             self.weight.clamp_(min=-1.0, max=1.0)

@@ -11,13 +11,11 @@ Options:
 """
 import pytorch_lightning
 import torch
-
-from PIL import Image
 from omegaconf import DictConfig
+from PIL import Image
 
 from src.runner.predictor import Predictor
 from src.utils import get_config
-
 
 pytorch_lightning.seed_everything(777)
 torch.backends.cudnn.deterministic = True
