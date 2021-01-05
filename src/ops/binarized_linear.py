@@ -1,6 +1,9 @@
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 
 import torch
+
+from src.types import quantization
+from src.ops.utils import stochastic_quantize, deterministic_quantize
 
 
 class BinarizedLinear(torch.autograd.Function):
@@ -15,23 +18,32 @@ class BinarizedLinear(torch.autograd.Function):
     @staticmethod
     def forward(
         ctx: object,
-        input: torch.Tensor,
+        input: Tuple[torch.Tensor, torch.Tensor],
         weight: torch.Tensor,
         bias: Optional[torch.Tensor] = None,
-        mode: Optional[str] = "deterministic",
+        mode: Optional[str] = quantization.QType.DETER,
     ) -> torch.Tensor:
         r"""
         Binary forward operation을 정의한다.
 
-        Note:
+        .. note:
             forward는 binarized wegiths를 이용하지만, backward는 real-value weights를 이용한다.
             torch.nn.functional.linear를 참고하였다.
             `Deterministic`과 `Stochastic`을 별도로 구현한다.
             Refs: https://pytorch.org/docs/stable/_modules/torch/nn/functional.html#linear
 
+            weights는 다음과 같이 scale factor와 binarized weights로 이진화될 수 있음
+            
+            .. math::
+                \alpha^{*} = \frac{\Sigma{|I_{i}|}}{n},\ where\ \ n=c\times w\times h
+
+            .. math::
+                W_{b} = \bigg\{\begin{matrix}+1,\ \ \ if\ W\geq0, \ \ \\-1,\ \ \ otherwise,\end{matrix}
+
+
         Args:
             ctx (object): forward/backward간 정보를 공유하기위한 context 정보
-            input (torch.Tensor): :math:`(N, *, in\_features)` where `*` means any number of additional dimensions
+            input (Tuple[torch.Tensor, torch.Tensor]): scale factor and binairzed input data.
             weight (torch.Tensor): :math:`(out\_features, in\_features)`
             bias (Optional[torch.Tensor]): :math:`(out\_features)`
             mode (str): `Deterministic`, `Stochastic` Method를 명시한다.
@@ -39,40 +51,39 @@ class BinarizedLinear(torch.autograd.Function):
         Returns:
             (torch.Tensor) : binarized weights를 forwarding한 결과
         """
+        bin_input, input_scale_factor = input
+        weight_scale_factor, n = None, None
 
         # 별도로 Backward를 정의하므로 연산을 Computational Graph에 추가하지 않는다.
         with torch.no_grad():
-            if mode == "deterministic":
-                # torch.sign()함수는 Ternary로 Quantization 된다. [-1, 0, 1]
-                # 따라서 `0`에 대한 별도 처리를 해야 Binary weight를 가질 수 있다.
-                binarized_weight = weight.sign()
-                binarized_weight[binarized_weight == 0] = 1
-            elif mode == "stochastic":
-                # weights를 sigmoid 입력으로 넣어 이를 확률값으로 변환한다. `sigmoid(weights)`
-                # 해당 확률값을 이용하여 [-1, 1]을 생성한다.
-                # +1 if w >= p, where p = sigmoid(w)
-                # -1 else 1 - p
+            if mode == quantization.QType.DETER:
+                binarized_weight = deterministic_quantize(weight)
 
-                # p값을 먼저 구한다.
-                # [0, 1]사이의 값을 갖는 데이터에서 uniform 확률 분포로 데이터를 샘플링한다.
-                # sampling된 값들이 p값 이상을 갖으면 1, 그렇지 않으면 -1로 정의한다.
-                binarized_probability = torch.sigmoid(weight)
-                uniform_matrix = torch.empty(binarized_probability.shape).uniform_(0, 1)
-                binarized_weight = (binarized_probability >= uniform_matrix).type(
-                    torch.float32
-                )
-                binarized_weight[binarized_weight == 0] = -1.0
+                s = torch.sum(torch.abs(weight))
+                n = sum(weight.shape)
+                weight_scale_factor = s / n
+
+            elif mode == quantization.QType.STOCH:
+                binarized_weight = stochastic_quantize(weight)
+
+                s = torch.sum(torch.abs(torch.matmul(weight.T, binarized_weight)))
+                n = sum(weight.shape)
+                weight_scale_factor = s / n
+
             else:
                 raise RuntimeError(f"{mode} not supported")
 
+            if (not weight_scale_factor) or (not n):
+                raise RuntimeError("`scale_factor` or `n` not allow `None` value")
+
             device = weight.device
             binarized_weight = binarized_weight.to(device)
-            output = input.mm(binarized_weight.t())
+            output = bin_input.mm(binarized_weight.t()) * input_scale_factor * weight_scale_factor
 
             if bias is not None:
                 output += bias.unsqueeze(0).expand_as(output)
 
-        ctx.save_for_backward(input, binarized_weight, bias)
+        ctx.save_for_backward(input, binarized_weight, bias, weight_scale_factor, n)
 
         return output
 
@@ -84,6 +95,11 @@ class BinarizedLinear(torch.autograd.Function):
         Note:
             forward는 binarized wegiths를 이용하지만, backward는 real-value weights를 이용한다.
 
+            gradient는 다음과 같이 계산된다. 이 때, alpha는 ``scale factor``이며 n은 ``width * height * channels``이다.
+            
+            .. math::
+                \frac{\partial{C}}{\partial{\tilde{W_{i}}}}=\big(\frac{1}{n} + \frac{\partial{sign}}{\partial{W_{i}}} \alpha \big)
+
         Args:
             ctx (object): forward/backward간 정보를 공유하기위한 context 정보
             grad_output (Any): Compuational graph를 통해서 들어오는 gradient정보를 받는다.
@@ -92,15 +108,16 @@ class BinarizedLinear(torch.autograd.Function):
             (torch.Tensor) : Computational graph 앞으로 보내기위한 gradient 정보
         """
 
-        input, binarized_weight, bias = ctx.saved_tensors
+        input, binarized_weight, bias, weight_scale_factor, n = ctx.saved_tensors
+        bin_input, input_scale_factor = input
 
         grad_input = grad_weight = grad_bias = None
-
+        grad = (1 / n) + (binarized_weight * weight_scale_factor)
         with torch.no_grad():
             if ctx.needs_input_grad[0]:
-                grad_input = grad_output.mm(binarized_weight)
+                grad_input = grad_output.mm(grad)
             if ctx.needs_input_grad[1]:
-                grad_weight = grad_output.t().mm(input)
+                grad_weight = grad_output.t().mm(bin_input) * input_scale_factor
             if (bias is not None) and (ctx.needs_input_grad[2]):
                 grad_bias = grad_output.sum(0).squeeze(0)
 

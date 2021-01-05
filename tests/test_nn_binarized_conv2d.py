@@ -6,6 +6,7 @@ import pytorch_lightning
 import torch
 
 from src.nn.binarized_conv2d import BinarizedConv2d
+from src.types import quantization
 
 
 @pytest.fixture(scope="module")
@@ -17,36 +18,36 @@ def fix_seed():
 
 forward_test_case = [
     # (device, test_input, test_bias, test_mode, exptected_shape)
-    ("cpu", torch.rand((1, 1, 3, 3)), False, "deterministic", (1, 1, 1, 1)),
+    ("cpu", torch.rand((1, 1, 3, 3)), False, quantization.QType.DETER, (1, 1, 1, 1)),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         False,
-        "deterministic",
+        quantization.QType.DETER,
         (1, 1, 1, 1),
     ),
-    ("cpu", torch.rand((1, 1, 3, 3)), True, "deterministic", (1, 1, 1, 1)),
+    ("cpu", torch.rand((1, 1, 3, 3)), True, quantization.QType.DETER, (1, 1, 1, 1)),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         True,
-        "deterministic",
+        quantization.QType.DETER,
         (1, 1, 1, 1),
     ),
-    ("cpu", torch.rand((1, 1, 3, 3)), False, "stochastic", (1, 1, 1, 1)),
+    ("cpu", torch.rand((1, 1, 3, 3)), False, quantization.QType.STOCH, (1, 1, 1, 1)),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         False,
-        "stochastic",
+        quantization.QType.STOCH,
         (1, 1, 1, 1),
     ),
-    ("cpu", torch.rand((1, 1, 3, 3)), True, "stochastic", (1, 1, 1, 1)),
+    ("cpu", torch.rand((1, 1, 3, 3)), True, quantization.QType.STOCH, (1, 1, 1, 1)),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         True,
-        "stochastic",
+        quantization.QType.STOCH,
         (1, 1, 1, 1),
     ),
 ]
@@ -78,7 +79,7 @@ clipping_test_case = [
         "cpu",
         torch.rand((1, 1, 3, 3)),
         False,
-        "deterministic",
+        quantization.QType.DETER,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -86,7 +87,7 @@ clipping_test_case = [
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         False,
-        "deterministic",
+        quantization.QType.DETER,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -94,7 +95,7 @@ clipping_test_case = [
         "cpu",
         torch.rand((1, 1, 3, 3)),
         True,
-        "deterministic",
+        quantization.QType.DETER,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -102,39 +103,25 @@ clipping_test_case = [
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         True,
-        "deterministic",
+        quantization.QType.DETER,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
-    (
-        "cpu",
-        torch.rand((1, 1, 3, 3)),
-        False,
-        "stochastic",
-        torch.tensor(1.0),
-        torch.tensor(-1.0),
-    ),
+    ("cpu", torch.rand((1, 1, 3, 3)), False, quantization.QType.STOCH, torch.tensor(1.0), torch.tensor(-1.0),),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         False,
-        "stochastic",
+        quantization.QType.STOCH,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
-    (
-        "cpu",
-        torch.rand((1, 1, 3, 3)),
-        True,
-        "stochastic",
-        torch.tensor(1.0),
-        torch.tensor(-1.0),
-    ),
+    ("cpu", torch.rand((1, 1, 3, 3)), True, quantization.QType.STOCH, torch.tensor(1.0), torch.tensor(-1.0),),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         True,
-        "stochastic",
+        quantization.QType.STOCH,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -146,13 +133,7 @@ clipping_test_case = [
     clipping_test_case,
 )
 def test_clipping(
-    fix_seed,
-    device,
-    test_input,
-    test_bias,
-    test_mode,
-    exptected_max_value,
-    exptected_min_value,
+    fix_seed, device, test_input, test_bias, test_mode, exptected_max_value, exptected_min_value,
 ):
 
     test_input = torch.rand((1, 1, 3, 3)).to(device)

@@ -6,6 +6,7 @@ import pytorch_lightning
 import torch
 
 from src.nn.binarized_linear import BinarizedLinear
+from src.types import quantization
 
 
 @pytest.fixture(scope="module")
@@ -17,36 +18,36 @@ def fix_seed():
 
 forward_test_case = [
     # (device, test_input, test_bias, test_mode, exptected_shape)
-    ("cpu", torch.rand((1, 10)), False, "deterministic", (1, 20)),
+    ("cpu", torch.rand((1, 10)), False, quantization.QType.DETER, (1, 20)),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 10)),
         False,
-        "deterministic",
+        quantization.QType.DETER,
         (1, 20),
     ),
-    ("cpu", torch.rand((1, 10)), True, "deterministic", (1, 20)),
+    ("cpu", torch.rand((1, 10)), True, quantization.QType.DETER, (1, 20)),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 10)),
         True,
-        "deterministic",
+        quantization.QType.DETER,
         (1, 20),
     ),
-    ("cpu", torch.rand((1, 10)), False, "stochastic", (1, 20)),
+    ("cpu", torch.rand((1, 10)), False, quantization.QType.STOCH, (1, 20)),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 10)),
         False,
-        "stochastic",
+        quantization.QType.STOCH,
         (1, 20),
     ),
-    ("cpu", torch.rand((1, 10)), True, "stochastic", (1, 20)),
+    ("cpu", torch.rand((1, 10)), True, quantization.QType.STOCH, (1, 20)),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 10)),
         True,
-        "stochastic",
+        quantization.QType.STOCH,
         (1, 20),
     ),
 ]
@@ -67,7 +68,7 @@ clipping_test_case = [
         "cpu",
         torch.rand((1, 10)),
         False,
-        "determistic",
+        quantization.QType.DETER,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -75,7 +76,7 @@ clipping_test_case = [
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 10)),
         False,
-        "determistic",
+        quantization.QType.DETER,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -83,7 +84,7 @@ clipping_test_case = [
         "cpu",
         torch.rand((1, 10)),
         True,
-        "determistic",
+        quantization.QType.DETER,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -91,7 +92,7 @@ clipping_test_case = [
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 10)),
         True,
-        "determistic",
+        quantization.QType.DETER,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -99,7 +100,7 @@ clipping_test_case = [
         "cpu",
         torch.rand((1, 10)),
         False,
-        "stochastic",
+        quantization.QType.STOCH,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -107,7 +108,7 @@ clipping_test_case = [
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 10)),
         False,
-        "stochastic",
+        quantization.QType.STOCH,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -115,7 +116,7 @@ clipping_test_case = [
         "cpu",
         torch.rand((1, 10)),
         True,
-        "stochastic",
+        quantization.QType.STOCH,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -123,7 +124,7 @@ clipping_test_case = [
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 10)),
         True,
-        "stochastic",
+        quantization.QType.STOCH,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -135,13 +136,7 @@ clipping_test_case = [
     clipping_test_case,
 )
 def test_clipping(
-    fix_seed,
-    device,
-    test_input,
-    test_bias,
-    test_mode,
-    exptected_max_value,
-    exptected_min_value,
+    fix_seed, device, test_input, test_bias, test_mode, exptected_max_value, exptected_min_value,
 ):
 
     test_input = test_input.to(device)
