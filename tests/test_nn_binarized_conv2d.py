@@ -107,7 +107,14 @@ clipping_test_case = [
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
-    ("cpu", torch.rand((1, 1, 3, 3)), False, quantization.QType.STOCH, torch.tensor(1.0), torch.tensor(-1.0),),
+    (
+        "cpu",
+        torch.rand((1, 1, 3, 3)),
+        False,
+        quantization.QType.STOCH,
+        torch.tensor(1.0),
+        torch.tensor(-1.0),
+    ),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
@@ -116,7 +123,14 @@ clipping_test_case = [
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
-    ("cpu", torch.rand((1, 1, 3, 3)), True, quantization.QType.STOCH, torch.tensor(1.0), torch.tensor(-1.0),),
+    (
+        "cpu",
+        torch.rand((1, 1, 3, 3)),
+        True,
+        quantization.QType.STOCH,
+        torch.tensor(1.0),
+        torch.tensor(-1.0),
+    ),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
@@ -133,7 +147,13 @@ clipping_test_case = [
     clipping_test_case,
 )
 def test_clipping(
-    fix_seed, device, test_input, test_bias, test_mode, exptected_max_value, exptected_min_value,
+    fix_seed,
+    device,
+    test_input,
+    test_bias,
+    test_mode,
+    exptected_max_value,
+    exptected_min_value,
 ):
 
     test_input = torch.rand((1, 1, 3, 3)).to(device)

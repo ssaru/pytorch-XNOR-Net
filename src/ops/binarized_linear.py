@@ -2,8 +2,8 @@ from typing import Any, Optional, Tuple
 
 import torch
 
+from src.ops.utils import deterministic_quantize, stochastic_quantize
 from src.types import quantization
-from src.ops.utils import stochastic_quantize, deterministic_quantize
 
 
 class BinarizedLinear(torch.autograd.Function):
@@ -33,7 +33,7 @@ class BinarizedLinear(torch.autograd.Function):
             Refs: https://pytorch.org/docs/stable/_modules/torch/nn/functional.html#linear
 
             weights는 다음과 같이 scale factor와 binarized weights로 이진화될 수 있음
-            
+
             .. math::
                 \alpha^{*} = \frac{\Sigma{|I_{i}|}}{n},\ where\ \ n=c\times w\times h
 
@@ -78,7 +78,11 @@ class BinarizedLinear(torch.autograd.Function):
 
             device = weight.device
             binarized_weight = binarized_weight.to(device)
-            output = bin_input.mm(binarized_weight.t()) * input_scale_factor * weight_scale_factor
+            output = (
+                bin_input.mm(binarized_weight.t())
+                * input_scale_factor
+                * weight_scale_factor
+            )
 
             if bias is not None:
                 output += bias.unsqueeze(0).expand_as(output)
@@ -96,7 +100,7 @@ class BinarizedLinear(torch.autograd.Function):
             forward는 binarized wegiths를 이용하지만, backward는 real-value weights를 이용한다.
 
             gradient는 다음과 같이 계산된다. 이 때, alpha는 ``scale factor``이며 n은 ``width * height * channels``이다.
-            
+
             .. math::
                 \frac{\partial{C}}{\partial{\tilde{W_{i}}}}=\big(\frac{1}{n} + \frac{\partial{sign}}{\partial{W_{i}}} \alpha \big)
 

@@ -1,6 +1,6 @@
 import os
-import sys
 import random
+import sys
 
 import pytest
 import pytorch_lightning
@@ -21,7 +21,10 @@ def fix_seed():
 mode_test_case = [
     # "test_input, test_weight, test_bias, test_mode"
     (
-        (torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]), torch.tensor(1.0)),
+        (
+            torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]),
+            torch.tensor(1.0),
+        ),
         torch.tensor([[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]),
         None,
         "test",
@@ -29,7 +32,9 @@ mode_test_case = [
 ]
 
 
-@pytest.mark.parametrize("test_input, test_weight, test_bias, test_mode", mode_test_case)
+@pytest.mark.parametrize(
+    "test_input, test_weight, test_bias, test_mode", mode_test_case
+)
 def test_supported_mode(fix_seed, test_input, test_weight, test_bias, test_mode):
     with pytest.raises(RuntimeError):
         binarized_linear(test_input, test_weight, test_bias, test_mode)
@@ -39,7 +44,10 @@ forward_test_case = [
     # (test_input, test_weight, test_bias, test_mode, expected)
     (
         # scale factor = 1
-        (torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]), torch.tensor(1.0)),
+        (
+            torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]),
+            torch.tensor(1.0),
+        ),
         # scale factor = 1.35
         torch.tensor([[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]),
         None,
@@ -48,7 +56,10 @@ forward_test_case = [
     ),
     (
         # scale factor = 1
-        (torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]), torch.tensor(1.0)),
+        (
+            torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]),
+            torch.tensor(1.0),
+        ),
         # scale factor = 1.35
         torch.tensor([[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]),
         torch.tensor([1.0]),
@@ -57,23 +68,37 @@ forward_test_case = [
     ),
     (
         # scale factor = 1
-        (torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]), torch.tensor(1.0)),
+        (
+            torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]),
+            torch.tensor(1.0),
+        ),
         # scale factor = 2.7167, binarized result : tensor([[ 1.,  1.,  1.], [ 1., -1., -1.], [ 1., -1., -1.]])
         torch.tensor([[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]),
         None,
         quantization.QType.STOCH,
         torch.tensor(
-            [[8.1500, -2.7167, -2.7167], [8.1500, -2.7167, -2.7167], [8.1500, -2.7167, -2.7167]]
+            [
+                [8.1500, -2.7167, -2.7167],
+                [8.1500, -2.7167, -2.7167],
+                [8.1500, -2.7167, -2.7167],
+            ]
         ),
     ),
     (
-        (torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]), torch.tensor(1.0)),
+        (
+            torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]),
+            torch.tensor(1.0),
+        ),
         # scale factor = 2.7167, binarized result : tensor([[ 1.,  1.,  1.], [ 1., -1., -1.], [ 1., -1., -1.]])
         torch.tensor([[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]),
         torch.tensor([1.0]),
         quantization.QType.STOCH,
         torch.tensor(
-            [[7.0500, -1.0167, -1.0167], [7.0500, -1.0167, -1.0167], [7.0500, -1.0167, -1.0167]]
+            [
+                [7.0500, -1.0167, -1.0167],
+                [7.0500, -1.0167, -1.0167],
+                [7.0500, -1.0167, -1.0167],
+            ]
         ),
     ),
 ]
@@ -153,11 +178,19 @@ def test_backward_indirectly(
     binarized_linear(test_input, test_weight, test_bias, test_mode).backward()
 
     assert torch.allclose(
-        input=test_input.grad, other=expected_input_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
+        input=test_input.grad,
+        other=expected_input_grad,
+        rtol=1e-04,
+        atol=1e-04,
+        equal_nan=True,
     )
 
     assert torch.allclose(
-        input=test_weight.grad, other=expected_weight_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
+        input=test_weight.grad,
+        other=expected_weight_grad,
+        rtol=1e-04,
+        atol=1e-04,
+        equal_nan=True,
     )
 
 
@@ -165,7 +198,9 @@ directly_backward_test_case = [
     # (saved_tensors, needs_input_grad, grad_output, expected_weight_grad, expected_input_grad, expected_bias_grad)
     (
         (
-            torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]], requires_grad=True),
+            torch.tensor(
+                [[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]], requires_grad=True
+            ),
             torch.tensor([[1.0, -1.0, 1.0]]),
             torch.tensor([1]),
         ),
@@ -201,13 +236,25 @@ def test_backward_directly(
     input_grad, weight_grad, bias_grad, _ = BinarizedLinear.backward(ctx, grad_output)
 
     assert torch.allclose(
-        input=input_grad, other=expected_input_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
+        input=input_grad,
+        other=expected_input_grad,
+        rtol=1e-04,
+        atol=1e-04,
+        equal_nan=True,
     )
 
     assert torch.allclose(
-        input=weight_grad, other=expected_weight_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
+        input=weight_grad,
+        other=expected_weight_grad,
+        rtol=1e-04,
+        atol=1e-04,
+        equal_nan=True,
     )
 
     assert torch.allclose(
-        input=bias_grad, other=expected_bias_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
+        input=bias_grad,
+        other=expected_bias_grad,
+        rtol=1e-04,
+        atol=1e-04,
+        equal_nan=True,
     )

@@ -136,7 +136,13 @@ clipping_test_case = [
     clipping_test_case,
 )
 def test_clipping(
-    fix_seed, device, test_input, test_bias, test_mode, exptected_max_value, exptected_min_value,
+    fix_seed,
+    device,
+    test_input,
+    test_bias,
+    test_mode,
+    exptected_max_value,
+    exptected_min_value,
 ):
 
     test_input = test_input.to(device)
