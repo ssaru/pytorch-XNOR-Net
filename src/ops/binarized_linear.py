@@ -2,8 +2,8 @@ from typing import Any, Optional, Tuple
 
 import torch
 
+from src.ops.utils import deterministic_quantize, stochastic_quantize
 from src.types import quantization
-from src.ops.utils import stochastic_quantize, deterministic_quantize
 
 
 class BinarizedLinear(torch.autograd.Function):
@@ -98,8 +98,7 @@ class BinarizedLinear(torch.autograd.Function):
     @staticmethod
     def backward(ctx: object, grad_output: Any):
         r"""        
-        gradient에 binarized weight를 마스킹하여 grad를 전달한다.
-        
+        gradient에 binarized weight를 마스킹하여 grad를 전달한다.        
 
         Args:
             ctx (object): forward/backward간 정보를 공유하기위한 데이터 컨테이너

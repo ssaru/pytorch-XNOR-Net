@@ -1,6 +1,6 @@
 import os
-import sys
 import random
+import sys
 
 import pytest
 import pytorch_lightning
@@ -21,7 +21,7 @@ def fix_seed():
 mode_test_case = [
     # "test_input, test_weight, test_bias, test_mode"
     (
-        (torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]), torch.tensor(1.0)),
+        (torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]), torch.tensor(1.0),),
         torch.tensor([[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]),
         None,
         "test",
@@ -66,7 +66,7 @@ forward_test_case = [
         None,
         quantization.QType.STOCH,
         torch.tensor(
-            [[8.1500, -2.7167, -2.7167], [8.1500, -2.7167, -2.7167], [8.1500, -2.7167, -2.7167]]
+            [[8.1500, -2.7167, -2.7167], [8.1500, -2.7167, -2.7167], [8.1500, -2.7167, -2.7167],]
         ),
     ),
     (

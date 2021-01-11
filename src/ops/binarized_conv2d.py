@@ -37,7 +37,7 @@ class BinarizedConv2d(torch.autograd.Function):
             Refs: https://pytorch.org/docs/stable/nn.functional.html#conv2d
 
             weights는 다음과 같이 scale factor와 binarized weights로 이진화될 수 있음
-            
+
             .. math::
                 \alpha^{*} = \frac{\Sigma{|I_{i}|}}{n},\ where\ \ n=c\times w\times h
 
@@ -87,7 +87,9 @@ class BinarizedConv2d(torch.autograd.Function):
                 binarized_probability = torch.sigmoid(weight)
                 uniform_matrix = torch.empty(binarized_probability.shape).uniform_(0, 1)
                 uniform_matrix = uniform_matrix.to(weight.device)
-                binarized_weight = (binarized_probability >= uniform_matrix).type(torch.float32)
+                binarized_weight = (binarized_probability >= uniform_matrix).type(
+                    torch.float32
+                )
                 binarized_weight[binarized_weight == 0] = -1.0
 
                 s = torch.sum(torch.abs(torch.matmul(weight.T, binarized_weight)))
@@ -101,7 +103,9 @@ class BinarizedConv2d(torch.autograd.Function):
             raise RuntimeError("`scale_factor` or `n` not allow `None` value")
 
         with torch.no_grad():
-            output = F.conv2d(input, binarized_weight, bias, stride, padding, dilation, groups)
+            output = F.conv2d(
+                input, binarized_weight, bias, stride, padding, dilation, groups
+            )
             output = output * input_scale_factor * weight_scale_factor
 
         # Save input, binarized weight, bias in context object
@@ -122,7 +126,7 @@ class BinarizedConv2d(torch.autograd.Function):
             forward는 binarized wegiths를 이용하지만, backward는 real-value weights를 이용한다.
 
             gradient는 다음과 같이 계산된다. 이 때, alpha는 ``scale factor``이며 n은 ``width * height * channels``이다.
-            
+
             .. math::
                 \frac{\partial{C}}{\partial{\tilde{W_{i}}}}=\big(\frac{1}{n} + \frac{\partial{sign}}{\partial{W_{i}}} \alpha \big)
 
@@ -145,11 +149,23 @@ class BinarizedConv2d(torch.autograd.Function):
         with torch.no_grad():
             if ctx.needs_input_grad[0]:
                 grad_input = torch.nn.grad.conv2d_input(
-                    input.shape, grad, grad_output, stride, padding, dilation, groups,
+                    input.shape,
+                    grad,
+                    grad_output,
+                    stride,
+                    padding,
+                    dilation,
+                    groups,
                 )
             if ctx.needs_input_grad[1]:
                 grad_weight = torch.nn.grad.conv2d_weight(
-                    input, binarized_weight.shape, grad_output, stride, padding, dilation, groups,
+                    input,
+                    binarized_weight.shape,
+                    grad_output,
+                    stride,
+                    padding,
+                    dilation,
+                    groups,
                 )
 
             if bias is not None and ctx.needs_input_grad[2]:

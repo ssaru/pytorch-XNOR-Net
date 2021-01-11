@@ -54,5 +54,9 @@ def test_transforms(fix_seed, input, expected_value):
     )
 
     assert torch.allclose(
-        input=scale_factor, other=expected_scale_factor, rtol=1e-04, atol=1e-04, equal_nan=True,
+        input=scale_factor,
+        other=expected_scale_factor,
+        rtol=1e-04,
+        atol=1e-04,
+        equal_nan=True,
     )
