@@ -1,24 +1,51 @@
+import operator
+from functools import reduce
 from typing import Any, List, Optional, Tuple, Union
 
 import torch
 import torch.nn.functional as F
 
+from src.ops.utils import deterministic_quantize, stochastic_quantize
 from src.types import quantization
+
+
+def prod(iterable):
+    return reduce(operator.mul, iterable, 1)
 
 
 class BinarizedConv2d(torch.autograd.Function):
     r"""
-    Binary Operation에 대한 커스텀 Forward/Backward 정의
-    Binary Operation Method는 `Deterministic`과 `Stochastic`으로 구분됨
+    binarized tensor를 입력으로 하여,
+    scale factor와 binarized weights로 Conv2D 연산을 수행하는 operation function
+
+    Binarize operation method는 BinaryConnect의 `Deterministic`과 `Stochastic` method를 사용하며,
+    scale factor와 weights를  binarize하는 방법은 XNOR-Net의 method를 사용함.
+
+    .. note:
+        Weights binarize method는 forward에서 binarized wegiths를 사용하고,
+        gradient update는 real-value weights에 적용한다.
+
+        `Deterministic` method는 다음과 같다.
+        .. math::
+            W_{b} = \bigg\{\begin{matrix}+1,\ \ \ if\ W\geq0, \ \ \\-1,\ \ \ otherwise,\end{matrix}
+
+        `Stochastic` method는 다음과 같다.
+        .. math::
+            W_{b} = \bigg\{\begin{matrix}+1,\ \ \ with\ probability\ p=\sigma(w) \ \ \\-1,\ \ \ with\ probability\ 1-p\ \ \ \ \ \ \ \ \ \end{matrix}
+
+        `Scale factor`는 다음과 같다.
+        .. math::
+            \alpha^{*} = \frac{\Sigma{|W_{i}|}}{n},\ where\ \ n=c\times w\times h
+
     Refers:
-        1). Custom Operation : https://pytorch.org/docs/stable/notes/extending.html
-        2). Binary Operation Methods : https://arxiv.org/pdf/1511.00363.pdf
+        1). BinaryConnect : https://arxiv.org/pdf/1511.00363.pdf
+        2). XNOR-Net : https://arxiv.org/pdf/1603.05279.pdf
     """
 
     @staticmethod
     def forward(
         ctx: object,
-        input: Tuple[torch.Tensor, torch.Tensor],
+        input: torch.Tensor,
         weight: torch.Tensor,
         bias: Optional[torch.Tensor] = None,
         stride: Union[int, Tuple[int, int]] = 1,
@@ -28,88 +55,58 @@ class BinarizedConv2d(torch.autograd.Function):
         mode: str = quantization.QType.DETER,
     ) -> torch.Tensor:
         r"""
-        Binary forward operation을 정의한다.
+        Real-value weights를 binarized weight와 scale factor로 변환한다.
+        binarized tensor이를입력으로 받으면 이를 다음과 같이 계산한다.
 
-        .. note:
-            forward는 binarized wegiths를 이용하지만, backward는 real-value weights를 이용한다.
-            torch.nn.functional.conv2d를 참고하였다.
-            `Deterministic`과 `Stochastic`을 별도로 구현한다.
-            Refs: https://pytorch.org/docs/stable/nn.functional.html#conv2d
-
-            weights는 다음과 같이 scale factor와 binarized weights로 이진화될 수 있음
-
-            .. math::
-                \alpha^{*} = \frac{\Sigma{|I_{i}|}}{n},\ where\ \ n=c\times w\times h
-
-            .. math::
-                W_{b} = \bigg\{\begin{matrix}+1,\ \ \ if\ W\geq0, \ \ \\-1,\ \ \ otherwise,\end{matrix}
-
+        .. math::
+            output=I_{b} \odot W_{b} \times \alpha_{W_{b}}
 
         Args:
-            ctx         (object): forward/backward간 정보를 공유하기위한 context 정보
-            input       (Tuple[torch.Tensor, torch.Tensor]): scale factor and binairzed input data.
+            ctx         (object): forward/backward간 정보를 공유하기위한 데이터 컨테이너
+            input       (torch.Tensor): binairzed tensor
             weight      (torch.Tensor): :math:`(out\_features, in\_features)`
             bias        (Optional[torch.Tensor]): :math:`(out\_features)`
             stride      (Union[int, Tuple[int, int]]): the stride of the convolving kernel. Can be a single number or a tuple `(sH, sW)`. Default: 1
             padding     (Union[int, Tuple[int, int]]): implicit paddings on both sides of the input. Can be a single number or a tuple `(padH, padW)`. Default: 0
             dilation    (Union[int, Tuple[int, int]]): the spacing between kernel elements. Can be a single number or a tuple `(dH, dW)`. Default: 1
             groups:     (int): split input into groups, :math:`\text{in\_channels}` should be divisible by the number of groups. Default: 1
-            mode        (str): `Deterministic`, `Stochastic` Method를 명시한다.
+            mode        (str): 이진화 종류
 
         Returns:
-            (torch.Tensor) : binarized weights를 forwarding한 결과
+            (torch.Tensor) : :math:\text{out}(N_i, C_{\text{out}_j}) = \text{bias}(C_{\text{out}_j}) + \sum_{k = 0}^{C_{\text{in}} - 1} \text{weight}(C_{\text{out}_j}, k) \star \text{input}(N_i, k)
         """
 
-        input_scale_factor, input_scale = input
         weight_scale_factor, n = None, None
 
-        # 별도로 Backward를 정의하므로 연산을 Computational Graph에 추가하지 않는다.
         with torch.no_grad():
             if mode == quantization.QType.DETER:
-                # torch.sign()함수는 Ternary로 Quantization 된다. [-1, 0, 1]
-                # 따라서 `0`에 대한 별도 처리를 해야 Binary weight를 가질 수 있다.
-                binarized_weight = weight.sign()
-                binarized_weight[binarized_weight == 0] = 1.0
+                binarized_weight = deterministic_quantize(weight)
 
                 s = torch.sum(torch.abs(weight))
-                n = sum(weight.shape)
+                n = prod(weight.shape)
                 weight_scale_factor = s / n
 
             elif mode == quantization.QType.STOCH:
-                # weights를 sigmoid 입력으로 넣어 이를 확률값으로 변환한다. `sigmoid(weights)`
-                # 해당 확률값을 이용하여 [-1, 1]을 생성한다.
-                # +1 if w >= p, where p = sigmoid(w)
-                # -1 else 1 - p
-
-                # binarized probability를 먼저 구한다.
-                # [0, 1]사이의 값을 갖는 데이터에서 uniform 확률 분포로 데이터를 샘플링한다.
-                # sampling된 값들이 p값 이상을 갖으면 1, 그렇지 않으면 -1로 정의한다.
-                binarized_probability = torch.sigmoid(weight)
-                uniform_matrix = torch.empty(binarized_probability.shape).uniform_(0, 1)
-                uniform_matrix = uniform_matrix.to(weight.device)
-                binarized_weight = (binarized_probability >= uniform_matrix).type(
-                    torch.float32
-                )
-                binarized_weight[binarized_weight == 0] = -1.0
+                binarized_weight = stochastic_quantize(weight)
 
                 s = torch.sum(torch.abs(torch.matmul(weight.T, binarized_weight)))
                 n = sum(weight.shape)
                 weight_scale_factor = s / n
-
             else:
                 raise RuntimeError(f"{mode} not supported")
 
         if (not weight_scale_factor) or (not n):
             raise RuntimeError("`scale_factor` or `n` not allow `None` value")
 
+        device = weight.device
+        binarized_weight = binarized_weight.to(device)
+
         with torch.no_grad():
-            output = F.conv2d(
-                input, binarized_weight, bias, stride, padding, dilation, groups
-            )
-            output = output * input_scale_factor * weight_scale_factor
+            output = F.conv2d(input, binarized_weight, bias, stride, padding, dilation, groups)
+            output = output * weight_scale_factor
 
         # Save input, binarized weight, bias in context object
-        ctx.save_for_backward(input, binarized_weight, bias, scale_factor, n)
+        ctx.save_for_backward(input, binarized_weight * weight_scale_factor, bias)
         ctx.stride = stride
         ctx.padding = padding
         ctx.dilation = dilation
@@ -120,37 +117,29 @@ class BinarizedConv2d(torch.autograd.Function):
     @staticmethod
     def backward(ctx: object, grad_output: Any) -> Tuple[Optional[torch.Tensor]]:
         r"""
-        Binary backward operation을 정의한다.
-
-        .. note:
-            forward는 binarized wegiths를 이용하지만, backward는 real-value weights를 이용한다.
-
-            gradient는 다음과 같이 계산된다. 이 때, alpha는 ``scale factor``이며 n은 ``width * height * channels``이다.
-
-            .. math::
-                \frac{\partial{C}}{\partial{\tilde{W_{i}}}}=\big(\frac{1}{n} + \frac{\partial{sign}}{\partial{W_{i}}} \alpha \big)
+        gradient에 binarized weight를 마스킹하여 grad를 전달한다.
 
         Args:
-            ctx (object): forward/backward간 정보를 공유하기위한 context 정보
-            grad_output (Any): Compuational graph를 통해서 들어오는 gradient정보를 받는다.
+            ctx (object): forward/backward간 정보를 공유하기위한 데이터 컨테이너
+            grad_output (Any): Compuational graph를 통해서 들어오는 gradient정보
 
         Returns:
-            (torch.Tensor) : Computational graph 앞으로 보내기위한 gradient 정보
+            (torch.Tensor) : Computational graph 앞으로 보내기위한 gradient 정보        
         """
-        input, binarized_weight, bias, scale_factor, n = ctx.saved_tensors
+        input, binarized_weight_with_scale_factor, bias = ctx.saved_tensors
+
         stride = ctx.stride
         padding = ctx.padding
         dilation = ctx.dilation
         groups = ctx.groups
-        grad_input = grad_weight = grad_bias = None
 
-        grad = (1 / n) + (binarized_weight * scale_factor)
+        grad_input = grad_weight = grad_bias = None
 
         with torch.no_grad():
             if ctx.needs_input_grad[0]:
                 grad_input = torch.nn.grad.conv2d_input(
                     input.shape,
-                    grad,
+                    binarized_weight_with_scale_factor,
                     grad_output,
                     stride,
                     padding,
@@ -160,7 +149,7 @@ class BinarizedConv2d(torch.autograd.Function):
             if ctx.needs_input_grad[1]:
                 grad_weight = torch.nn.grad.conv2d_weight(
                     input,
-                    binarized_weight.shape,
+                    binarized_weight_with_scale_factor.shape,
                     grad_output,
                     stride,
                     padding,
@@ -169,7 +158,7 @@ class BinarizedConv2d(torch.autograd.Function):
                 )
 
             if bias is not None and ctx.needs_input_grad[2]:
-                grad_bias = grad_output.sum((0, 2, 3)).squeeze(0)
+                grad_bias = grad_output.sum((0, 2, 3))
 
         return grad_input, grad_weight, grad_bias, None, None, None, None, None
 

@@ -44,7 +44,7 @@ class BinarizedLinear(torch.autograd.Function):
     @staticmethod
     def forward(
         ctx: object,
-        input: Tuple[torch.Tensor, torch.Tensor],
+        input: torch.Tensor,
         weight: torch.Tensor,
         bias: Optional[torch.Tensor] = None,
         mode: Optional[str] = quantization.QType.DETER,
