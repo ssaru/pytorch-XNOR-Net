@@ -1,7 +1,6 @@
 import operator
-
-from typing import Any, Optional, Tuple
 from functools import reduce
+from typing import Any, Optional, Tuple
 
 import torch
 
