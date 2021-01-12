@@ -1,9 +1,16 @@
+import operator
+
 from typing import Any, Optional, Tuple
+from functools import reduce
 
 import torch
 
 from src.ops.utils import deterministic_quantize, stochastic_quantize
 from src.types import quantization
+
+
+def prod(iterable):
+    return reduce(operator.mul, iterable, 1)
 
 
 class BinarizedLinear(torch.autograd.Function):
@@ -68,7 +75,7 @@ class BinarizedLinear(torch.autograd.Function):
                 binarized_weight = deterministic_quantize(weight)
 
                 s = torch.sum(torch.abs(weight))
-                n = sum(weight.shape)
+                n = prod(weight.shape)
                 weight_scale_factor = s / n
 
             elif mode == quantization.QType.STOCH:
@@ -77,7 +84,6 @@ class BinarizedLinear(torch.autograd.Function):
                 s = torch.sum(torch.abs(torch.matmul(weight.T, binarized_weight)))
                 n = sum(weight.shape)
                 weight_scale_factor = s / n
-
             else:
                 raise RuntimeError(f"{mode} not supported")
 
@@ -91,7 +97,7 @@ class BinarizedLinear(torch.autograd.Function):
             if bias is not None:
                 output += bias.unsqueeze(0).expand_as(output)
 
-        ctx.save_for_backward(input, binarized_weight, bias, weight_scale_factor, n)
+        ctx.save_for_backward(input, binarized_weight * weight_scale_factor, bias)
 
         return output
 
@@ -108,17 +114,17 @@ class BinarizedLinear(torch.autograd.Function):
             (torch.Tensor) : Computational graph 앞으로 보내기위한 gradient 정보
         """
 
-        input, binarized_weight, bias, weight_scale_factor, n = ctx.saved_tensors
+        input, binarized_weight_with_scale_factor, bias = ctx.saved_tensors
 
         grad_input = grad_weight = grad_bias = None
 
         with torch.no_grad():
             if ctx.needs_input_grad[0]:
-                grad_input = grad_output.mm(binarized_weight * weight_scale_factor)
+                grad_input = grad_output.mm(binarized_weight_with_scale_factor)
             if ctx.needs_input_grad[1]:
                 grad_weight = grad_output.t().mm(input)
             if (bias is not None) and (ctx.needs_input_grad[2]):
-                grad_bias = grad_output.sum(0).squeeze(0)
+                grad_bias = grad_output.sum(0)
 
         return grad_input, grad_weight, grad_bias, None
 
