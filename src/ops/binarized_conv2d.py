@@ -102,7 +102,9 @@ class BinarizedConv2d(torch.autograd.Function):
         binarized_weight = binarized_weight.to(device)
 
         with torch.no_grad():
-            output = F.conv2d(input, binarized_weight, bias, stride, padding, dilation, groups)
+            output = F.conv2d(
+                input, binarized_weight, bias, stride, padding, dilation, groups
+            )
             output = output * weight_scale_factor
 
         # Save input, binarized weight, bias in context object
@@ -124,7 +126,7 @@ class BinarizedConv2d(torch.autograd.Function):
             grad_output (Any): Compuational graph를 통해서 들어오는 gradient정보
 
         Returns:
-            (torch.Tensor) : Computational graph 앞으로 보내기위한 gradient 정보        
+            (torch.Tensor) : Computational graph 앞으로 보내기위한 gradient 정보
         """
         input, binarized_weight_with_scale_factor, bias = ctx.saved_tensors
 
