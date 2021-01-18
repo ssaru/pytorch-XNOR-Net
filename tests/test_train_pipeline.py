@@ -12,13 +12,6 @@ from src.nn.binarized_conv2d import BinarizedConv2d
 from src.utils import build_model, get_config, get_data_loaders
 
 
-@pytest.fixture(scope="module")
-def fix_seed() -> None:
-    pytorch_lightning.seed_everything(777)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
-
 def tearup_mlp_config() -> DictConfig:
     config_path = {
         "--data-config": "conf/mlp/data/data.yml",
@@ -58,9 +51,7 @@ def test_train_pipeline(fix_seed, config, gpus):
 
     train_dataloader, test_dataloader = get_data_loaders(config=config.data)
     model = build_model(model_conf=config.model)
-    training_container = TrainingContainer(
-        model=model, config=config.training_container
-    )
+    training_container = TrainingContainer(model=model, config=config.training_container)
 
     trainer_params = dict(config.trainer.params)
     trainer_params["limit_train_batches"] = 0.1

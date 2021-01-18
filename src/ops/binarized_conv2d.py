@@ -1,5 +1,3 @@
-import operator
-from functools import reduce
 from typing import Any, List, Optional, Tuple, Union
 
 import torch
@@ -7,10 +5,7 @@ import torch.nn.functional as F
 
 from src.ops.utils import deterministic_quantize, stochastic_quantize
 from src.types import quantization
-
-
-def prod(iterable):
-    return reduce(operator.mul, iterable, 1)
+from src.utils import prod
 
 
 class BinarizedConv2d(torch.autograd.Function):

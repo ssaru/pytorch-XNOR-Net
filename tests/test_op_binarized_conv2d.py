@@ -9,13 +9,6 @@ from src.ops.binarized_conv2d import BinarizedConv2d, binarized_conv2d
 from src.types import quantization
 
 
-@pytest.fixture(scope="module")
-def fix_seed():
-    pytorch_lightning.seed_everything(777)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
-
 mode_test_case = [
     # (test_input, test_weight, test_bias, test_mode)
     (
@@ -27,9 +20,7 @@ mode_test_case = [
 ]
 
 
-@pytest.mark.parametrize(
-    "test_input, test_weight, test_bias, test_mode", mode_test_case
-)
+@pytest.mark.parametrize("test_input, test_weight, test_bias, test_mode", mode_test_case)
 def test_supported_mode(fix_seed, test_input, test_weight, test_bias, test_mode):
     with pytest.raises(RuntimeError):
         binarized_conv2d(test_input, test_weight, test_bias, 1, 0, 1, 1, test_mode)
@@ -74,9 +65,7 @@ forward_test_case = [
 def test_forward(fix_seed, test_input, test_weight, test_bias, test_mode, expected):
 
     assert torch.allclose(
-        input=binarized_conv2d(
-            test_input, test_weight, test_bias, 1, 0, 1, 1, test_mode
-        ),
+        input=binarized_conv2d(test_input, test_weight, test_bias, 1, 0, 1, 1, test_mode),
         other=expected,
         rtol=1e-04,
         atol=1e-04,
@@ -87,12 +76,9 @@ def test_forward(fix_seed, test_input, test_weight, test_bias, test_mode, expect
 indirectly_backward_test_case = [
     # (test_input, test_weight, test_bias, test_mode, expected_weight_grad, expected_input_grad)
     (
+        torch.tensor([[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]], requires_grad=True),
         torch.tensor(
-            [[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]], requires_grad=True
-        ),
-        torch.tensor(
-            [[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]],
-            requires_grad=True,
+            [[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]], requires_grad=True,
         ),
         None,
         quantization.QType.DETER,
@@ -100,12 +86,9 @@ indirectly_backward_test_case = [
         torch.tensor([[[[-1.0, 1.0, 1.0], [1.0, -1.0, 1.0], [1.0, -1.0, 1.0]]]]),
     ),
     (
+        torch.tensor([[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]], requires_grad=True),
         torch.tensor(
-            [[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]], requires_grad=True
-        ),
-        torch.tensor(
-            [[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]],
-            requires_grad=True,
+            [[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]], requires_grad=True,
         ),
         torch.tensor([1.0]),
         quantization.QType.DETER,
@@ -113,12 +96,9 @@ indirectly_backward_test_case = [
         torch.tensor([[[[-1.0, 1.0, 1.0], [1.0, -1.0, 1.0], [1.0, -1.0, 1.0]]]]),
     ),
     (
+        torch.tensor([[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]], requires_grad=True),
         torch.tensor(
-            [[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]], requires_grad=True
-        ),
-        torch.tensor(
-            [[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]],
-            requires_grad=True,
+            [[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]], requires_grad=True,
         ),
         None,
         quantization.QType.STOCH,
@@ -126,12 +106,9 @@ indirectly_backward_test_case = [
         torch.tensor([[[[-1.0, -1.0, -1.0], [1.0, -1.0, 1.0], [-1.0, -1.0, -1.0]]]]),
     ),
     (
+        torch.tensor([[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]], requires_grad=True),
         torch.tensor(
-            [[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]], requires_grad=True
-        ),
-        torch.tensor(
-            [[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]],
-            requires_grad=True,
+            [[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]], requires_grad=True,
         ),
         torch.tensor([1.0]),
         quantization.QType.STOCH,
@@ -155,24 +132,14 @@ def test_backward_indirectly(
     expected_input_grad,
 ):
 
-    binarized_conv2d(
-        test_input, test_weight, test_bias, 1, 0, 1, 1, test_mode
-    ).backward()
+    binarized_conv2d(test_input, test_weight, test_bias, 1, 0, 1, 1, test_mode).backward()
 
     assert torch.allclose(
-        input=test_input.grad,
-        other=expected_input_grad,
-        rtol=1e-04,
-        atol=1e-04,
-        equal_nan=True,
+        input=test_input.grad, other=expected_input_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
     )
 
     assert torch.allclose(
-        input=test_weight.grad,
-        other=expected_weight_grad,
-        rtol=1e-04,
-        atol=1e-04,
-        equal_nan=True,
+        input=test_weight.grad, other=expected_weight_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
     )
 
 
@@ -181,12 +148,10 @@ directly_backward_test_case = [
     (
         (
             torch.tensor(
-                [[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]],
-                requires_grad=True,
+                [[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]], requires_grad=True,
             ),
             torch.tensor(
-                [[[[-1.0, 1.0, 1.0], [1.0, -1.0, 1.0], [1.0, -1.0, 1.0]]]],
-                requires_grad=True,
+                [[[[-1.0, 1.0, 1.0], [1.0, -1.0, 1.0], [1.0, -1.0, 1.0]]]], requires_grad=True,
             ),
             torch.tensor([1]),
         ),
@@ -224,30 +189,17 @@ def test_backward_directly(
 
     ctx = CTX(saved_tensors, needs_input_grad)
 
-    input_grad, weight_grad, bias_grad, _, _, _, _, _ = BinarizedConv2d.backward(
-        ctx, grad_output
+    input_grad, weight_grad, bias_grad, _, _, _, _, _ = BinarizedConv2d.backward(ctx, grad_output)
+
+    assert torch.allclose(
+        input=input_grad, other=expected_input_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
     )
 
     assert torch.allclose(
-        input=input_grad,
-        other=expected_input_grad,
-        rtol=1e-04,
-        atol=1e-04,
-        equal_nan=True,
+        input=weight_grad, other=expected_weight_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
     )
 
     assert torch.allclose(
-        input=weight_grad,
-        other=expected_weight_grad,
-        rtol=1e-04,
-        atol=1e-04,
-        equal_nan=True,
+        input=bias_grad, other=expected_bias_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
     )
 
-    assert torch.allclose(
-        input=bias_grad,
-        other=expected_bias_grad,
-        rtol=1e-04,
-        atol=1e-04,
-        equal_nan=True,
-    )

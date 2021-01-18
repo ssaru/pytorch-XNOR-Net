@@ -9,13 +9,6 @@ from src.nn.binarized_linear import BinarizedLinear
 from src.types import quantization
 
 
-@pytest.fixture(scope="module")
-def fix_seed():
-    pytorch_lightning.seed_everything(777)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
-
 forward_test_case = [
     # (device, test_input, test_bias, test_mode, exptected_shape)
     ("cpu", torch.rand((1, 10)), False, quantization.QType.DETER, (1, 20)),
@@ -136,13 +129,7 @@ clipping_test_case = [
     clipping_test_case,
 )
 def test_clipping(
-    fix_seed,
-    device,
-    test_input,
-    test_bias,
-    test_mode,
-    exptected_max_value,
-    exptected_min_value,
+    fix_seed, device, test_input, test_bias, test_mode, exptected_max_value, exptected_min_value,
 ):
 
     test_input = test_input.to(device)

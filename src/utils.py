@@ -1,5 +1,8 @@
+import operator
+from functools import reduce
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
+
 
 import numpy as np
 import torch
@@ -11,17 +14,19 @@ from pytorch_lightning.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 from torch.utils.data import DataLoader, Dataset
 
-from src.model import net as Net
+# from src.model import net as Net
 
 
 class InitializationError(Exception):
     pass
 
 
+def prod(iterable):
+    return reduce(operator.mul, iterable, 1)
+
+
 def build_model(model_conf: DictConfig):
-    return load_class(
-        module=Net, name=model_conf.type, args={"model_config": model_conf}
-    )
+    return load_class(module=Net, name=model_conf.type, args={"model_config": model_conf})
 
 
 def get_next_version(root_dir: Path) -> str:
@@ -72,20 +77,13 @@ def get_log_dir(config: DictConfig) -> Path:
     return run_dir
 
 
-def get_checkpoint_callback(
-    log_dir: Path, config: DictConfig
-) -> Union[Callback, List[Callback]]:
+def get_checkpoint_callback(log_dir: Path, config: DictConfig) -> Union[Callback, List[Callback]]:
     checkpoint_prefix = f"{config.model.type}"
-    checkpoint_suffix = (
-        "_{epoch:02d}-{train_loss:.2f}-{val_loss:.2f}-{train_acc:.2f}-{val_acc:.2f}"
-    )
+    checkpoint_suffix = "_{epoch:02d}-{train_loss:.2f}-{val_loss:.2f}-{train_acc:.2f}-{val_acc:.2f}"
 
     checkpoint_path = log_dir.joinpath(checkpoint_prefix + checkpoint_suffix)
     checkpoint_callback = ModelCheckpoint(
-        filepath=checkpoint_path,
-        save_top_k=2,
-        save_weights_only=True,
-        monitor="valid/accuracy",
+        filepath=checkpoint_path, save_top_k=2, save_weights_only=True, monitor="valid/accuracy",
     )
 
     return checkpoint_callback
@@ -122,9 +120,7 @@ def get_data_loaders(config: DictConfig) -> Tuple[DataLoader, DataLoader]:
 
     args["train"] = True
     args["transform"] = transforms.Compose([transforms.ToTensor()])
-    train_dataset = load_class(
-        module=torchvision.datasets, name=config.dataset.type, args=args
-    )
+    train_dataset = load_class(module=torchvision.datasets, name=config.dataset.type, args=args)
 
     train_dataloader = DataLoader(
         dataset=train_dataset,
@@ -135,9 +131,7 @@ def get_data_loaders(config: DictConfig) -> Tuple[DataLoader, DataLoader]:
     )
 
     args["train"] = False
-    test_dataset = load_class(
-        module=torchvision.datasets, name=config.dataset.type, args=args
-    )
+    test_dataset = load_class(module=torchvision.datasets, name=config.dataset.type, args=args)
     test_dataloader = DataLoader(
         dataset=test_dataset,
         batch_size=config.dataloader.params.batch_size,

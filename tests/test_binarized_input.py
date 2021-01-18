@@ -8,13 +8,6 @@ import torch
 from src.transforms.binarized_input import BinarizeWithScaleFactor
 
 
-@pytest.fixture(scope="module")
-def fix_seed() -> None:
-    pytorch_lightning.seed_everything(777)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
-
 input_transform_test_case = [
     # (input, expected_value)
     # (-5, 5)
@@ -54,9 +47,5 @@ def test_transforms(fix_seed, input, expected_value):
     )
 
     assert torch.allclose(
-        input=scale_factor,
-        other=expected_scale_factor,
-        rtol=1e-04,
-        atol=1e-04,
-        equal_nan=True,
+        input=scale_factor, other=expected_scale_factor, rtol=1e-04, atol=1e-04, equal_nan=True,
     )
