@@ -1,8 +1,7 @@
-import sys
 import logging
+import sys
 
 import pytest
-
 import pytorch_lightning
 import torch
 

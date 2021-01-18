@@ -1,6 +1,6 @@
+import logging
 import os
 import sys
-import logging
 
 import pytest
 import pytorch_lightning
@@ -17,7 +17,10 @@ logger = logging.getLogger(__name__)
 mode_test_case = [
     # "test_input, test_weight, test_bias, test_mode"
     (
-        (torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]), torch.tensor(1.0),),
+        (
+            torch.tensor([[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]),
+            torch.tensor(1.0),
+        ),
         torch.tensor([[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]),
         None,
         "test",
@@ -25,7 +28,9 @@ mode_test_case = [
 ]
 
 
-@pytest.mark.parametrize("test_input, test_weight, test_bias, test_mode", mode_test_case)
+@pytest.mark.parametrize(
+    "test_input, test_weight, test_bias, test_mode", mode_test_case
+)
 def test_supported_mode(fix_seed, test_input, test_weight, test_bias, test_mode):
     with pytest.raises(RuntimeError):
         binarized_linear(test_input, test_weight, test_bias, test_mode)
@@ -62,7 +67,11 @@ forward_test_case = [
         None,
         quantization.QType.STOCH,
         torch.tensor(
-            [[8.1501, -2.7167, -2.7167], [8.1501, -2.7167, -2.7167], [8.1501, -2.7167, -2.7167],]
+            [
+                [8.1501, -2.7167, -2.7167],
+                [8.1501, -2.7167, -2.7167],
+                [8.1501, -2.7167, -2.7167],
+            ]
         ),
     ),
     (
@@ -74,7 +83,11 @@ forward_test_case = [
         torch.tensor([1.0]),
         quantization.QType.STOCH,
         torch.tensor(
-            [[9.1501, -1.7167, -1.7167], [9.1501, -1.7167, -1.7167], [9.1501, -1.7167, -1.7167],]
+            [
+                [9.1501, -1.7167, -1.7167],
+                [9.1501, -1.7167, -1.7167],
+                [9.1501, -1.7167, -1.7167],
+            ]
         ),
     ),
 ]
@@ -158,16 +171,28 @@ def test_backward_indirectly(
     binarized_linear(test_input, test_weight, test_bias, test_mode).backward()
 
     assert torch.allclose(
-        input=test_input.grad, other=expected_input_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
+        input=test_input.grad,
+        other=expected_input_grad,
+        rtol=1e-04,
+        atol=1e-04,
+        equal_nan=True,
     )
 
     assert torch.allclose(
-        input=test_weight.grad, other=expected_weight_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
+        input=test_weight.grad,
+        other=expected_weight_grad,
+        rtol=1e-04,
+        atol=1e-04,
+        equal_nan=True,
     )
 
     if expected_bias_grad:
         assert torch.allclose(
-            input=test_bias.grad, other=expected_bias_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
+            input=test_bias.grad,
+            other=expected_bias_grad,
+            rtol=1e-04,
+            atol=1e-04,
+            equal_nan=True,
         )
 
 
@@ -211,14 +236,25 @@ def test_backward_directly(
     input_grad, weight_grad, bias_grad, _ = BinarizedLinear.backward(ctx, grad_output)
 
     assert torch.allclose(
-        input=input_grad, other=expected_input_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
+        input=input_grad,
+        other=expected_input_grad,
+        rtol=1e-04,
+        atol=1e-04,
+        equal_nan=True,
     )
 
     assert torch.allclose(
-        input=weight_grad, other=expected_weight_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
+        input=weight_grad,
+        other=expected_weight_grad,
+        rtol=1e-04,
+        atol=1e-04,
+        equal_nan=True,
     )
 
     assert torch.allclose(
-        input=bias_grad, other=expected_bias_grad, rtol=1e-04, atol=1e-04, equal_nan=True,
+        input=bias_grad,
+        other=expected_bias_grad,
+        rtol=1e-04,
+        atol=1e-04,
+        equal_nan=True,
     )
-

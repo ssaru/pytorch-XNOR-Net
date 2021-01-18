@@ -51,7 +51,9 @@ def test_train_pipeline(fix_seed, config, gpus):
 
     train_dataloader, test_dataloader = get_data_loaders(config=config.data)
     model = build_model(model_conf=config.model)
-    training_container = TrainingContainer(model=model, config=config.training_container)
+    training_container = TrainingContainer(
+        model=model, config=config.training_container
+    )
 
     trainer_params = dict(config.trainer.params)
     trainer_params["limit_train_batches"] = 0.1

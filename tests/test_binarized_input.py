@@ -7,7 +7,6 @@ import torch
 
 from src.transforms.binarized_input import BinarizeWithScaleFactor
 
-
 input_transform_test_case = [
     # (input, expected_value)
     # (-5, 5)
@@ -47,5 +46,9 @@ def test_transforms(fix_seed, input, expected_value):
     )
 
     assert torch.allclose(
-        input=scale_factor, other=expected_scale_factor, rtol=1e-04, atol=1e-04, equal_nan=True,
+        input=scale_factor,
+        other=expected_scale_factor,
+        rtol=1e-04,
+        atol=1e-04,
+        equal_nan=True,
     )
