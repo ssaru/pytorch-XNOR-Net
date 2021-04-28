@@ -83,9 +83,14 @@ class BinarizedConv2d(torch.autograd.Function):
 
             elif mode == quantization.QType.STOCH:
                 binarized_weight = stochastic_quantize(weight)
-                
-                s = torch.sum(torch.abs(torch.matmul(torch.transpose(weight, dim0=2, dim1=3),
-                                                     binarized_weight)))
+
+                s = torch.sum(
+                    torch.abs(
+                        torch.matmul(
+                            torch.transpose(weight, dim0=2, dim1=3), binarized_weight
+                        )
+                    )
+                )
                 n = prod(weight.shape)
                 weight_scale_factor = s / n
             else:

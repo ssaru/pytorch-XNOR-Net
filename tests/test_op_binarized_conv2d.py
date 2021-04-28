@@ -1,6 +1,6 @@
+import logging
 import os
 import sys
-import logging
 
 import pytest
 import pytorch_lightning
@@ -82,6 +82,7 @@ def test_forward(fix_seed, test_input, test_weight, test_bias, test_mode, expect
         atol=1e-04,
         equal_nan=True,
     )
+
 
 # TODO. Check Test Code
 
