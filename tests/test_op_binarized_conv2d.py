@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 
 import pytest
 import pytorch_lightning
@@ -7,6 +8,9 @@ import torch
 
 from src.ops.binarized_conv2d import BinarizedConv2d, binarized_conv2d
 from src.types import quantization
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 mode_test_case = [
     # (test_input, test_weight, test_bias, test_mode)
@@ -34,28 +38,28 @@ forward_test_case = [
         torch.tensor([[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]]),
         None,
         quantization.QType.DETER,
-        torch.tensor([[[[3.0]]]]),
+        torch.tensor([[[[2.7]]]]),
     ),
     (
         torch.tensor([[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]]),
         torch.tensor([[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]]),
         torch.tensor([1.0]),
         quantization.QType.DETER,
-        torch.tensor([[[[4.0]]]]),
+        torch.tensor([[[[3.6]]]]),
     ),
     (
         torch.tensor([[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]]),
-        torch.tensor([[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]]),
+        torch.tensor([[[[-1.0, 0.5, 0.5], [0.5, -0.8, 1.0], [0.1, -0.3, 0.5]]]]),
         None,
         quantization.QType.STOCH,
-        torch.tensor([[[[1.0]]]]),
+        torch.tensor([[[[-1.1111]]]]),
     ),
     (
         torch.tensor([[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]]),
         torch.tensor([[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]]),
         torch.tensor([1.0]),
         quantization.QType.STOCH,
-        torch.tensor([[[[2.0]]]]),
+        torch.tensor([[[[3.6222]]]]),
     ),
 ]
 
@@ -65,16 +69,21 @@ forward_test_case = [
 )
 def test_forward(fix_seed, test_input, test_weight, test_bias, test_mode, expected):
 
+    answer = binarized_conv2d(test_input, test_weight, test_bias, 1, 0, 1, 1, test_mode)
+
+    logger.debug(f"answer: {answer}")
+    logger.debug(f"test mode: {test_mode}")
+    logger.debug(f"expected: {expected}")
+
     assert torch.allclose(
-        input=binarized_conv2d(
-            test_input, test_weight, test_bias, 1, 0, 1, 1, test_mode
-        ),
+        input=answer,
         other=expected,
         rtol=1e-04,
         atol=1e-04,
         equal_nan=True,
     )
 
+# TODO. Check Test Code
 
 indirectly_backward_test_case = [
     # (test_input, test_weight, test_bias, test_mode, expected_weight_grad, expected_input_grad)
