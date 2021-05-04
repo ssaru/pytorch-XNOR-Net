@@ -103,7 +103,11 @@ def test_forward(fix_seed, test_input, test_weight, test_bias, test_mode, expect
     logger.debug(f"answer: {answer}")
     logger.debug(f"expected: {expected}")
     assert torch.allclose(
-        input=answer, other=expected, rtol=1e-04, atol=1e-04, equal_nan=True,
+        input=answer,
+        other=expected,
+        rtol=1e-04,
+        atol=1e-04,
+        equal_nan=True,
     )
 
 
