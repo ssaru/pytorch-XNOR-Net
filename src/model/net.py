@@ -210,9 +210,7 @@ class BinaryLinear(nn.Module):
         # torchsummary only supported [cuda, cpu]. not cuda:0
         device = str(self.device).split(":")[0]
         torch_summary(
-            self,
-            input_size=(self._channels, self._height, self._width),
-            device=device,
+            self, input_size=(self._channels, self._height, self._width), device=device,
         )
 
     @property
@@ -316,9 +314,7 @@ class BinaryConv(nn.Module):
         # torchsummary only supported [cuda, cpu]. not cuda:0
         device = str(self.device).split(":")[0]
         torch_summary(
-            self,
-            input_size=(self._channels, self._height, self._width),
-            device=device,
+            self, input_size=(self._channels, self._height, self._width), device=device,
         )
 
     @property

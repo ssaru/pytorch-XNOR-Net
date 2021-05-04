@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Optional, Tuple
 
 import torch
@@ -5,6 +6,9 @@ import torch
 from src.ops.utils import deterministic_quantize, stochastic_quantize
 from src.types import quantization
 from src.utils import prod
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
 
 
 class BinarizedLinear(torch.autograd.Function):
@@ -64,6 +68,8 @@ class BinarizedLinear(torch.autograd.Function):
 
         weight_scale_factor, n = None, None
 
+        logger.debug(f"input: {input}")
+
         with torch.no_grad():
             if mode == quantization.QType.DETER:
                 binarized_weight = deterministic_quantize(weight)
@@ -75,14 +81,22 @@ class BinarizedLinear(torch.autograd.Function):
             elif mode == quantization.QType.STOCH:
                 binarized_weight = stochastic_quantize(weight)
 
-                s = torch.sum(torch.abs(torch.matmul(weight.T, binarized_weight)))
-                n = sum(weight.shape)
+                matmul = torch.matmul(weight.T, binarized_weight)
+                s = torch.sum(matmul)
+                n = prod(weight.shape)
                 weight_scale_factor = s / n
+
+                logging.debug(f"matmul result : {matmul}")
+
             else:
                 raise RuntimeError(f"{mode} not supported")
 
             if (not weight_scale_factor) or (not n):
                 raise RuntimeError("`scale_factor` or `n` not allow `None` value")
+
+            logger.debug(f"weights: {weight}")
+            logger.debug(f"binarized weights: {binarized_weight}")
+            logger.debug(f"weight scale factor: {weight_scale_factor}")
 
             device = weight.device
             binarized_weight = binarized_weight.to(device)

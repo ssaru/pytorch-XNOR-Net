@@ -9,7 +9,8 @@ import torchvision
 import torchvision.transforms as transforms
 from omegaconf import DictConfig, OmegaConf
 from PIL import Image
-from pytorch_lightning.callbacks import Callback, EarlyStopping, ModelCheckpoint
+from pytorch_lightning.callbacks import (Callback, EarlyStopping,
+                                         ModelCheckpoint)
 from pytorch_lightning.loggers import WandbLogger
 from torch.utils.data import DataLoader, Dataset
 

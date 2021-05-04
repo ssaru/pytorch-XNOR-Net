@@ -63,14 +63,10 @@ binarylinear_forward_test_case = [
 
 
 @pytest.mark.parametrize(
-    "device, test_input",
-    binarylinear_forward_test_case,
+    "device, test_input", binarylinear_forward_test_case,
 )
 def test_binarylinear_forward(
-    fix_seed,
-    tearup_binarylinear_model_config,
-    device,
-    test_input,
+    fix_seed, tearup_binarylinear_model_config, device, test_input,
 ):
 
     model = BinaryLinear(tearup_binarylinear_model_config).to(device)
@@ -247,14 +243,10 @@ binaryconv_forward_test_case = [
 
 
 @pytest.mark.parametrize(
-    "device, test_input",
-    binaryconv_forward_test_case,
+    "device, test_input", binaryconv_forward_test_case,
 )
 def test_binaryconv_forward(
-    fix_seed,
-    tearup_binaryconv_model_config,
-    device,
-    test_input,
+    fix_seed, tearup_binaryconv_model_config, device, test_input,
 ):
 
     model = BinaryConv(tearup_binaryconv_model_config).to(device)

@@ -1,7 +1,8 @@
 pytest==6.2.1
 pytest-cov==2.10.1
-torch==1.5.0
-torchvision==0.6.0 
+torch==1.7.1
+torchvision==0.8.2
+torchaudio==0.7.2
 pytorch-lightning==1.0.4
 omegaconf==2.0.1rc11
 type-docopt==0.1.0
