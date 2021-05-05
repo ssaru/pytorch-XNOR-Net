@@ -1,5 +1,4 @@
 import logging
-
 import os
 import sys
 
@@ -8,7 +7,6 @@ import pytorch_lightning
 import torch
 
 from src.ops.utils import stochastic_quantize
-
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

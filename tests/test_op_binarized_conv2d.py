@@ -9,7 +9,6 @@ import torch
 from src.ops.binarized_conv2d import BinarizedConv2d, binarized_conv2d
 from src.types import quantization
 
-
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 

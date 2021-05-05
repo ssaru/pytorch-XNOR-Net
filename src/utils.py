@@ -16,7 +16,6 @@ from torch.utils.data import DataLoader, Dataset
 
 from src.model import net as Net
 
-
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 
@@ -160,5 +159,7 @@ def get_data_loaders(config: DictConfig) -> Tuple[DataLoader, DataLoader]:
 
 
 def load_class(module: Any, name: str, args: Dict):
-    logger.debug(f"[utils.py - load_class] module: {module}, name: {name}, args: {args}")
+    logger.debug(
+        f"[utils.py - load_class] module: {module}, name: {name}, args: {args}"
+    )
     return getattr(module, name)(**args)

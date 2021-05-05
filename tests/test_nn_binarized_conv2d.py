@@ -1,6 +1,6 @@
+import logging
 import os
 import sys
-import logging
 
 import pytest
 import pytorch_lightning
@@ -67,7 +67,7 @@ def test_foward(fix_seed, device, test_input, test_bias, test_mode, exptected_sh
         padding_mode="zeros",
         mode=test_mode,
     ).to(device)
-    
+
     model_output_shape = model(test_input).to("cpu").shape
 
     logger.debug(f"device : {device}")
