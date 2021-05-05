@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 
 import pytest
 import pytorch_lightning
@@ -7,6 +8,10 @@ import torch
 
 from src.nn.binarized_conv2d import BinarizedConv2d
 from src.types import quantization
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 
 forward_test_case = [
     # (device, test_input, test_bias, test_mode, exptected_shape)
@@ -62,8 +67,17 @@ def test_foward(fix_seed, device, test_input, test_bias, test_mode, exptected_sh
         padding_mode="zeros",
         mode=test_mode,
     ).to(device)
+    
+    model_output_shape = model(test_input).to("cpu").shape
 
-    assert model(test_input).shape == exptected_shape
+    logger.debug(f"device : {device}")
+    logger.debug(f"input : {test_input}")
+    logger.debug(f"bias : {test_bias}")
+    logger.debug(f"mode : {test_mode}")
+    logger.debug(f"model output shape : {model_output_shape}")
+    logger.debug(f"expected shape : {exptected_shape}")
+
+    assert model_output_shape == exptected_shape
 
 
 clipping_test_case = [

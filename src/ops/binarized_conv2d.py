@@ -1,4 +1,5 @@
 from typing import Any, List, Optional, Tuple, Union
+import logging
 
 import torch
 import torch.nn.functional as F
@@ -6,6 +7,10 @@ import torch.nn.functional as F
 from src.ops.utils import deterministic_quantize, stochastic_quantize
 from src.types import quantization
 from src.utils import prod
+
+
+logging.basicConfig()
+logger = logging.getLogger(__name__)
 
 
 class BinarizedConv2d(torch.autograd.Function):
@@ -72,17 +77,23 @@ class BinarizedConv2d(torch.autograd.Function):
         """
 
         weight_scale_factor, n = None, None
+        device = weight.device
+
+        logger.debug(f"default device : {device}")
 
         with torch.no_grad():
             if mode == quantization.QType.DETER:
-                binarized_weight = deterministic_quantize(weight)
+                binarized_weight = deterministic_quantize(weight).to(device)                
 
                 s = torch.sum(torch.abs(weight))
                 n = prod(weight.shape)
                 weight_scale_factor = s / n
 
             elif mode == quantization.QType.STOCH:
-                binarized_weight = stochastic_quantize(weight)
+                binarized_weight = stochastic_quantize(weight).to(device)                
+
+                logger.debug(f"device of weight: {weight.device}")
+                logger.debug(f"device of binarized weight: {binarized_weight.device}")
 
                 s = torch.sum(
                     torch.matmul(

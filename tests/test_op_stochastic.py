@@ -1,3 +1,5 @@
+import logging
+
 import os
 import sys
 
@@ -6,6 +8,11 @@ import pytorch_lightning
 import torch
 
 from src.ops.utils import stochastic_quantize
+
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
 
 stochastic_quantize_test_case = [
     # weights, num_iters,
@@ -22,6 +29,7 @@ def test_stochastic_quantize(num_iters, test_weight, expected_value):
     # 3. 더한 값을 뽑은 횟수만큼 나눈다.
     # 4. 50%확률로 잘 샘플링이 되었다면,
     #    `-1`과 `1`개수가 비슷할 테니, (3)의 결과는 0에 근사해야한다.
+
     s = 0
     with torch.no_grad():
         for _ in range(num_iters):
@@ -29,6 +37,11 @@ def test_stochastic_quantize(num_iters, test_weight, expected_value):
 
     s /= num_iters
 
+    logger.debug(f"number of iteration: {num_iters}")
+    logger.debug(f"weights: {test_weight}")
+    logger.debug(f"average value: {s}")
+    logger.debug(f"expected value: {expected_value}")
+
     assert torch.allclose(
-        input=s, other=expected_value, rtol=1e-02, atol=1e-02, equal_nan=True
+        input=s, other=expected_value, rtol=1e-01, atol=1e-01, equal_nan=True
     )
