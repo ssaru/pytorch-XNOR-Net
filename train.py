@@ -14,7 +14,6 @@ from typing import Dict, List, Tuple, Union
 import pytorch_lightning as pl
 import torch.nn as nn
 import torchvision.transforms as transforms
-import wandb
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import (
@@ -25,6 +24,7 @@ from pytorch_lightning.callbacks import (
 )
 from torch.utils.data import DataLoader
 
+import wandb
 from src.model import net as Net
 from src.model.net import BinaryConv, BinaryLinear
 from src.runner.runner import TrainingContainer

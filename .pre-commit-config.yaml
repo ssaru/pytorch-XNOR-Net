@@ -1,0 +1,60 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: local
+    hooks:
+      - id: set-test-env
+        name: set-test-env
+        entry: make set-test
+        language: system
+        pass_filenames: false
+        always_run: true
+        verbose: true
+
+  - repo: https://github.com/odwyersoftware/brunette
+    rev: 0.2.0
+    hooks:
+      - id: brunette
+        name: brunette
+        description: Run Brunette on Python code (fork of Black).
+        entry: brunette
+        language: python
+        types: [python]
+
+  - repo: https://github.com/pycqa/isort
+    rev: 5.6.4
+    hooks:
+      - id: isort
+        name: isort
+        types: [python]
+        args: ["--profile", "black", "--filter-files"]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v3.2.0
+    hooks:
+      - id: check-yaml
+      - id: end-of-file-fixer
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: sort-simple-yaml
+      - id: requirements-txt-fixer
+      - id: check-json
+
+  - repo: local
+    hooks:
+      # HACK:
+      # impossible to use a remote pytest for pre-commit.
+      # because remote repository must contains `.pre-commit-hooks.yaml` for pre-commit
+      # but, currently(2021.03.13) pytest repository does not have `.pre-commit-hooks.yaml`
+      - id: pytest
+        name: pytest
+        entry: python3 -m pytest --cov=src --disable-pytest-warnings
+        language: system
+        pass_filenames: false
+        always_run: true
+        verbose: true
+
+      - id: clean
+        name: clean
+        entry: make clean
+        language: system
