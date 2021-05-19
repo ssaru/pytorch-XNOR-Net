@@ -1,0 +1,40 @@
+name: Pytest & Build
+
+on:
+  push:
+    branches:
+      - master
+
+  schedule:
+    # 이 크론잡은 평일 00:00시에 실행됩니다.
+    - cron: "0 0 * * 1-5"
+
+jobs:
+  Pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - 3.x
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Prerequeist
+        run: |
+          make dev-env
+          python3 -m pip install -r requirements.txt --user
+          pip3 install pytest pytest-cov --no-cache --user
+          pip3 install -r requirements.txt --user
+      - name: test with pytest
+        run: python3 -m pytest --disable-pytest-warnings --cov-report=xml --cov=./ tests/*
+
+      - name: upload coverage to codecov
+        uses: codecov/codecov-action@v1.0.10
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
+          flags: tests
+          fail_ci_if_error: true
+          verbose: true
