@@ -7,14 +7,6 @@ import torch
 
 from src.transforms.binarized_input import BinarizeWithScaleFactor
 
-
-@pytest.fixture(scope="module")
-def fix_seed() -> None:
-    pytorch_lightning.seed_everything(777)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
-
 input_transform_test_case = [
     # (input, expected_value)
     # (-5, 5)

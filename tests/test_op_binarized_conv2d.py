@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -6,14 +7,10 @@ import pytorch_lightning
 import torch
 
 from src.ops.binarized_conv2d import BinarizedConv2d, binarized_conv2d
+from src.types import quantization
 
-
-@pytest.fixture(scope="module")
-def fix_seed():
-    pytorch_lightning.seed_everything(777)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 mode_test_case = [
     # (test_input, test_weight, test_bias, test_mode)
@@ -40,29 +37,29 @@ forward_test_case = [
         torch.tensor([[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]]),
         torch.tensor([[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]]),
         None,
-        "deterministic",
-        torch.tensor([[[[3.0]]]]),
+        quantization.QType.DETER,
+        torch.tensor([[[[2.7]]]]),
     ),
     (
         torch.tensor([[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]]),
         torch.tensor([[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]]),
         torch.tensor([1.0]),
-        "deterministic",
-        torch.tensor([[[[4.0]]]]),
+        quantization.QType.DETER,
+        torch.tensor([[[[3.6]]]]),
     ),
     (
         torch.tensor([[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]]),
-        torch.tensor([[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]]),
+        torch.tensor([[[[-1.0, 0.5, 0.5], [0.5, -0.8, 1.0], [0.1, -0.3, 0.5]]]]),
         None,
-        "stochastic",
-        torch.tensor([[[[1.0]]]]),
+        quantization.QType.STOCH,
+        torch.tensor([[[[0.1778]]]]),
     ),
     (
         torch.tensor([[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]]),
         torch.tensor([[[[-1.0, 1.0, 1.0], [1.0, -0.8, 1.0], [1.0, -0.3, 1.0]]]]),
         torch.tensor([1.0]),
-        "stochastic",
-        torch.tensor([[[[2.0]]]]),
+        quantization.QType.STOCH,
+        torch.tensor([[[[0.0222]]]]),
     ),
 ]
 
@@ -72,10 +69,14 @@ forward_test_case = [
 )
 def test_forward(fix_seed, test_input, test_weight, test_bias, test_mode, expected):
 
+    answer = binarized_conv2d(test_input, test_weight, test_bias, 1, 0, 1, 1, test_mode)
+
+    logger.debug(f"answer: {answer}")
+    logger.debug(f"test mode: {test_mode}")
+    logger.debug(f"expected: {expected}")
+
     assert torch.allclose(
-        input=binarized_conv2d(
-            test_input, test_weight, test_bias, 1, 0, 1, 1, test_mode
-        ),
+        input=answer,
         other=expected,
         rtol=1e-04,
         atol=1e-04,
@@ -94,9 +95,9 @@ indirectly_backward_test_case = [
             requires_grad=True,
         ),
         None,
-        "deterministic",
+        quantization.QType.DETER,
         torch.tensor([[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]]),
-        torch.tensor([[[[-1.0, 1.0, 1.0], [1.0, -1.0, 1.0], [1.0, -1.0, 1.0]]]]),
+        torch.tensor([[[[-0.9, 0.9, 0.9], [0.9, -0.9, 0.9], [0.9, -0.9, 0.9]]]]),
     ),
     (
         torch.tensor(
@@ -107,9 +108,9 @@ indirectly_backward_test_case = [
             requires_grad=True,
         ),
         torch.tensor([1.0]),
-        "deterministic",
+        quantization.QType.DETER,
         torch.tensor([[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]]),
-        torch.tensor([[[[-1.0, 1.0, 1.0], [1.0, -1.0, 1.0], [1.0, -1.0, 1.0]]]]),
+        torch.tensor([[[[-0.9, 0.9, 0.9], [0.9, -0.9, 0.9], [0.9, -0.9, 0.9]]]]),
     ),
     (
         torch.tensor(
@@ -120,9 +121,19 @@ indirectly_backward_test_case = [
             requires_grad=True,
         ),
         None,
-        "stochastic",
+        quantization.QType.STOCH,
         torch.tensor([[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]]),
-        torch.tensor([[[[-1.0, -1.0, -1.0], [1.0, -1.0, 1.0], [-1.0, -1.0, -1.0]]]]),
+        torch.tensor(
+            [
+                [
+                    [
+                        [0.0111, 0.0111, 0.0111],
+                        [0.0111, -0.0111, -0.0111],
+                        [0.0111, -0.0111, -0.0111],
+                    ]
+                ]
+            ]
+        ),
     ),
     (
         torch.tensor(
@@ -133,9 +144,19 @@ indirectly_backward_test_case = [
             requires_grad=True,
         ),
         torch.tensor([1.0]),
-        "stochastic",
+        quantization.QType.STOCH,
         torch.tensor([[[[1.0, 1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0, 1.0]]]]),
-        torch.tensor([[[[-1.0, 1.0, 1.0], [1.0, -1.0, 1.0], [-1.0, 1.0, -1.0]]]]),
+        torch.tensor(
+            [
+                [
+                    [
+                        [0.0111, 0.0111, 0.0111],
+                        [0.0111, -0.0111, -0.0111],
+                        [0.0111, -0.0111, -0.0111],
+                    ]
+                ]
+            ]
+        ),
     ),
 ]
 
@@ -157,6 +178,9 @@ def test_backward_indirectly(
     binarized_conv2d(
         test_input, test_weight, test_bias, 1, 0, 1, 1, test_mode
     ).backward()
+
+    logger.info(f"input grad : {test_input.grad}")
+    logger.info(f"expected input grad : {expected_input_grad}")
 
     assert torch.allclose(
         input=test_input.grad,

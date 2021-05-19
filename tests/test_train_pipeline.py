@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -11,12 +12,8 @@ from src.engine.train_jig import TrainingContainer
 from src.nn.binarized_conv2d import BinarizedConv2d
 from src.utils import build_model, get_config, get_data_loaders
 
-
-@pytest.fixture(scope="module")
-def fix_seed() -> None:
-    pytorch_lightning.seed_everything(777)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 def tearup_mlp_config() -> DictConfig:

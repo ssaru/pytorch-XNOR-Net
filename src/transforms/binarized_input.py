@@ -2,12 +2,13 @@ import torch
 
 
 class BinarizeWithScaleFactor(torch.nn.Module):
-    """Binarized a tensor image with scale factor
-    This transform does not support PIL Image.
+    """tensor 이미지를 scale factor와 binarized image로 변환한다.
+    이 transform은 PIL Image를 지원하지 않는다.
 
-    Given tensor image; ``(pixel[1],...,pixel[n])`` for ``n`` channels,
-    this transform will get scaling factor and binarized input
+    tensor image가 다음과 같이 주어지면: ``(pixel[1],...,pixel[n])`` for ``n`` channels,
+    이 transform은 scale factor와 이진화된 tensor image를 반환할 것이다.
 
+    scale factor와 이진화된 입력은 다음과 같다.
     .. math::
         \alpha^{*} = \frac{\Sigma{|I_{i}|}}{n},\ where\ \ n=c\times w\times h
 
@@ -15,8 +16,6 @@ class BinarizeWithScaleFactor(torch.nn.Module):
     .. math::
         I_{b} = \bigg\{\begin{matrix}+1,\ \ \ if\ I\geq0, \ \ \\-1,\ \ \ otherwise,\end{matrix}
 
-    .. note::
-        This transform acts out of place, i.e., it does not mutate the input tensor.
     """
 
     def __init__(self):
@@ -25,9 +24,9 @@ class BinarizeWithScaleFactor(torch.nn.Module):
     def forward(self, tensor: torch.Tensor) -> torch.Tensor:
         """
         Args:
-            tensor (torch.Tensor): Tensor image to be binarized input.
+            tensor (torch.Tensor): 이진화 입력과 scale factor을 구하기 위한 tensor image
         Returns:
-            (torch.Tensor, torch.Tensor): Binarized Tensor image and scaling factor.
+            (torch.Tensor, torch.Tensor): 이진화된 입력과 scale factor
         """
 
         scale_factor = torch.sum(torch.abs(tensor)) / sum(tensor.shape)

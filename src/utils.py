@@ -1,3 +1,6 @@
+import logging
+import operator
+from functools import reduce
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
@@ -13,9 +16,16 @@ from torch.utils.data import DataLoader, Dataset
 
 from src.model import net as Net
 
+logging.basicConfig()
+logger = logging.getLogger(__name__)
+
 
 class InitializationError(Exception):
     pass
+
+
+def prod(iterable):
+    return reduce(operator.mul, iterable, 1)
 
 
 def build_model(model_conf: DictConfig):
@@ -149,4 +159,7 @@ def get_data_loaders(config: DictConfig) -> Tuple[DataLoader, DataLoader]:
 
 
 def load_class(module: Any, name: str, args: Dict):
+    logger.debug(
+        f"[utils.py - load_class] module: {module}, name: {name}, args: {args}"
+    )
     return getattr(module, name)(**args)

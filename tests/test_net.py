@@ -7,13 +7,6 @@ from src.model.net import BinaryConv, BinaryLinear
 
 
 @pytest.fixture(scope="module")
-def fix_seed():
-    pytorch_lightning.seed_everything(777)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
-
-@pytest.fixture(scope="module")
 def tearup_binarylinear_model_config():
     return OmegaConf.create(
         {
@@ -23,7 +16,7 @@ def tearup_binarylinear_model_config():
                 "channels": 1,
                 "in_feature": 784,
                 "classes": 10,
-                "mode": "stochastic",
+                "mode": 2,
                 "feature_layers": {
                     "linear": [
                         {
@@ -32,7 +25,7 @@ def tearup_binarylinear_model_config():
                             "bias": True,
                             "batch_norm": True,
                             "activation": {"type": "ReLU", "args": {}},
-                            "mode": "stochastic",
+                            "mode": 2,
                         },
                         {
                             "in_feature": 1024,
@@ -40,7 +33,7 @@ def tearup_binarylinear_model_config():
                             "bias": True,
                             "batch_norm": True,
                             "activation": {"type": "ReLU", "args": {}},
-                            "mode": "stochastic",
+                            "mode": 2,
                         },
                         {
                             "in_feature": 1024,
@@ -48,7 +41,7 @@ def tearup_binarylinear_model_config():
                             "bias": True,
                             "batch_norm": True,
                             "activation": None,
-                            "mode": "stochastic",
+                            "mode": 2,
                         },
                     ]
                 },
@@ -95,7 +88,7 @@ def tearup_binaryconv_model_config():
                 "height": 32,
                 "channels": 3,
                 "classes": 10,
-                "mode": "stochastic",
+                "mode": 2,
                 "feature_layers": {
                     "conv": [
                         {
@@ -111,7 +104,7 @@ def tearup_binaryconv_model_config():
                             "batch_norm": True,
                             "activation": {"type": "ReLU", "args": {}},
                             "pool": None,
-                            "mode": "stochastic",
+                            "mode": 2,
                         },
                         {
                             "in_channels": 128,
@@ -136,7 +129,7 @@ def tearup_binaryconv_model_config():
                                     "ceil_mode": False,
                                 },
                             },
-                            "mode": "stochastic",
+                            "mode": 2,
                         },
                         {
                             "in_channels": 128,
@@ -151,7 +144,7 @@ def tearup_binaryconv_model_config():
                             "batch_norm": True,
                             "activation": {"type": "ReLU", "args": {}},
                             "pool": None,
-                            "mode": "stochastic",
+                            "mode": 2,
                         },
                         {
                             "in_channels": 256,
@@ -176,7 +169,7 @@ def tearup_binaryconv_model_config():
                                     "ceil_mode": False,
                                 },
                             },
-                            "mode": "stochastic",
+                            "mode": 2,
                         },
                         {
                             "in_channels": 256,
@@ -191,7 +184,7 @@ def tearup_binaryconv_model_config():
                             "batch_norm": True,
                             "activation": {"type": "ReLU", "args": {}},
                             "pool": None,
-                            "mode": "stochastic",
+                            "mode": 2,
                         },
                         {
                             "in_channels": 512,
@@ -206,7 +199,7 @@ def tearup_binaryconv_model_config():
                             "batch_norm": True,
                             "activation": {"type": "ReLU", "args": {}},
                             "pool": None,
-                            "mode": "stochastic",
+                            "mode": 2,
                         },
                     ],
                     "linear": [
@@ -216,7 +209,7 @@ def tearup_binaryconv_model_config():
                             "bias": True,
                             "batch_norm": True,
                             "activation": None,
-                            "mode": "stochastic",
+                            "mode": 2,
                         },
                         {
                             "in_feature": 1024,
@@ -224,7 +217,7 @@ def tearup_binaryconv_model_config():
                             "bias": True,
                             "batch_norm": True,
                             "activation": {"type": "ReLU", "args": {}},
-                            "mode": "stochastic",
+                            "mode": 2,
                         },
                         {
                             "in_feature": 1024,
@@ -232,7 +225,7 @@ def tearup_binaryconv_model_config():
                             "bias": True,
                             "batch_norm": True,
                             "activation": {"type": "ReLU", "args": {}},
-                            "mode": "stochastic",
+                            "mode": 2,
                         },
                     ],
                 },

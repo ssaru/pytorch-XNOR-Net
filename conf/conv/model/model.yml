@@ -6,7 +6,7 @@ model:
     height: 32
     channels: &in_channels 3
     classes: &out_feature 10
-    mode: &mode deterministic # stochastic or deterministic
+    mode: &mode 1 # stochastic=2 or deterministic=1
 
     feature_layers:
       conv:

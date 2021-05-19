@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -6,47 +7,44 @@ import pytorch_lightning
 import torch
 
 from src.nn.binarized_conv2d import BinarizedConv2d
+from src.types import quantization
 
-
-@pytest.fixture(scope="module")
-def fix_seed():
-    pytorch_lightning.seed_everything(777)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 
 forward_test_case = [
     # (device, test_input, test_bias, test_mode, exptected_shape)
-    ("cpu", torch.rand((1, 1, 3, 3)), False, "deterministic", (1, 1, 1, 1)),
+    ("cpu", torch.rand((1, 1, 3, 3)), False, quantization.QType.DETER, (1, 1, 1, 1)),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         False,
-        "deterministic",
+        quantization.QType.DETER,
         (1, 1, 1, 1),
     ),
-    ("cpu", torch.rand((1, 1, 3, 3)), True, "deterministic", (1, 1, 1, 1)),
+    ("cpu", torch.rand((1, 1, 3, 3)), True, quantization.QType.DETER, (1, 1, 1, 1)),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         True,
-        "deterministic",
+        quantization.QType.DETER,
         (1, 1, 1, 1),
     ),
-    ("cpu", torch.rand((1, 1, 3, 3)), False, "stochastic", (1, 1, 1, 1)),
+    ("cpu", torch.rand((1, 1, 3, 3)), False, quantization.QType.STOCH, (1, 1, 1, 1)),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         False,
-        "stochastic",
+        quantization.QType.STOCH,
         (1, 1, 1, 1),
     ),
-    ("cpu", torch.rand((1, 1, 3, 3)), True, "stochastic", (1, 1, 1, 1)),
+    ("cpu", torch.rand((1, 1, 3, 3)), True, quantization.QType.STOCH, (1, 1, 1, 1)),
     (
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         True,
-        "stochastic",
+        quantization.QType.STOCH,
         (1, 1, 1, 1),
     ),
 ]
@@ -70,7 +68,16 @@ def test_foward(fix_seed, device, test_input, test_bias, test_mode, exptected_sh
         mode=test_mode,
     ).to(device)
 
-    assert model(test_input).shape == exptected_shape
+    model_output_shape = model(test_input).to("cpu").shape
+
+    logger.debug(f"device : {device}")
+    logger.debug(f"input : {test_input}")
+    logger.debug(f"bias : {test_bias}")
+    logger.debug(f"mode : {test_mode}")
+    logger.debug(f"model output shape : {model_output_shape}")
+    logger.debug(f"expected shape : {exptected_shape}")
+
+    assert model_output_shape == exptected_shape
 
 
 clipping_test_case = [
@@ -78,7 +85,7 @@ clipping_test_case = [
         "cpu",
         torch.rand((1, 1, 3, 3)),
         False,
-        "deterministic",
+        quantization.QType.DETER,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -86,7 +93,7 @@ clipping_test_case = [
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         False,
-        "deterministic",
+        quantization.QType.DETER,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -94,7 +101,7 @@ clipping_test_case = [
         "cpu",
         torch.rand((1, 1, 3, 3)),
         True,
-        "deterministic",
+        quantization.QType.DETER,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -102,7 +109,7 @@ clipping_test_case = [
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         True,
-        "deterministic",
+        quantization.QType.DETER,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -110,7 +117,7 @@ clipping_test_case = [
         "cpu",
         torch.rand((1, 1, 3, 3)),
         False,
-        "stochastic",
+        quantization.QType.STOCH,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -118,7 +125,7 @@ clipping_test_case = [
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         False,
-        "stochastic",
+        quantization.QType.STOCH,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -126,7 +133,7 @@ clipping_test_case = [
         "cpu",
         torch.rand((1, 1, 3, 3)),
         True,
-        "stochastic",
+        quantization.QType.STOCH,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
@@ -134,7 +141,7 @@ clipping_test_case = [
         torch.device("cuda" if torch.cuda.is_available() else "cpu"),
         torch.rand((1, 1, 3, 3)),
         True,
-        "stochastic",
+        quantization.QType.STOCH,
         torch.tensor(1.0),
         torch.tensor(-1.0),
     ),
