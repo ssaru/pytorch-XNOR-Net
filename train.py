@@ -3,9 +3,9 @@ Usage:
     main.py train [options] [--dataset-config=<dataset config path>] [--model-config=<model config path>] [--runner-config=<runner config path>]
     main.py train (-h | --help)
 Options:
-    --dataset-config <dataset config path>  Path to YAML file for dataset configuration  [default: conf/mlp/dataset/dataset.yml] [type: path]
+    --dataset-config <dataset config path>  Path to YAML file for dataset configuration  [default: conf/mlp/data/data.yml] [type: path]
     --model-config <model config path>  Path to YAML file for model configuration  [default: conf/mlp/model/model.yml] [type: path]
-    --runner-config <runner config path>  Path to YAML file for model configuration  [default: conf/mlp/runner/runner.yml] [type: path]
+    --runner-config <runner config path>  Path to YAML file for model configuration  [default: conf/mlp/training/training.yml] [type: path]
     -h --help  Show this.
 """
 from pathlib import Path
@@ -14,7 +14,6 @@ from typing import Dict, List, Tuple, Union
 import pytorch_lightning as pl
 import torch.nn as nn
 import torchvision.transforms as transforms
-import wandb
 from omegaconf import DictConfig, OmegaConf
 from pytorch_lightning import Trainer, seed_everything
 from pytorch_lightning.callbacks import (
@@ -25,10 +24,12 @@ from pytorch_lightning.callbacks import (
 )
 from torch.utils.data import DataLoader
 
+import wandb
+from src.engine.train_jig import TrainingContainer
 from src.model import net as Net
 from src.model.net import BinaryConv, BinaryLinear
-from src.runner.runner import TrainingContainer
 from src.utils import (
+    build_model,
     get_checkpoint_callback,
     get_config,
     get_data_loaders,
@@ -39,10 +40,23 @@ from src.utils import (
     load_class,
 )
 
+# TODO. Hyperparameter search
+# Search space
+# Batch size: [32(ing), 64, 128, 256]
+# optimizer: [Adam, SGD, etc...]
+# lr : [1e-4(ing), 1e-3, 1e-2, 1e-1]
+# scheduler gamma: [0.1(ing), 0.2, 0.4, 0.6, 0.8, 0.9]
+
 
 def train(hparams: dict):
     config_list = ["--dataset-config", "--model-config", "--runner-config"]
     config: DictConfig = get_config(hparams=hparams, options=config_list)
+
+    # TODO. 임시방편
+    OmegaConf.set_readonly(config, False)
+    for key, value in config.hyperparameter.items():
+        config.runner.experiments.name += "-" + str(key) + "_" + str(value)
+    OmegaConf.set_readonly(config, True)
 
     log_dir = get_log_dir(config=config)
     log_dir.mkdir(parents=True, exist_ok=True)

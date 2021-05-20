@@ -46,6 +46,13 @@ check:
 	pre-commit run -a
 #################
 
+## train conv ##
+train-conv:
+	python3 main.py train --dataset-config conf/conv/data/data.yml --model-config conf/conv/model/model.yml --runner-config conf/conv/training/training.yml
+
+train-mlp:
+	python3 main.py train --dataset-config conf/mlp/data/data.yml --model-config conf/mlp/model/model.yml --runner-config conf/mlp/training/training.yml
+
 #### docker #####
 build-docker:
 	docker build -f docker/Dockerfile -t $(image_name) . --build-arg BASE_IMAGE=$(base_image) --build-arg PYTHON_VER=$(python_ver) --no-cache

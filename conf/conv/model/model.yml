@@ -18,9 +18,9 @@ model:
           bias: true
           padding_mode: zeros
           batch_norm: true
-          activation:
-            type: ReLU
-            args: {}
+          activation: False
+          #   type: ReLU
+          #   args: {}
           pool: null
           mode: *mode
 
@@ -32,9 +32,9 @@ model:
           bias: true
           padding_mode: zeros
           batch_norm: true
-          activation:
-            type: ReLU
-            args: {}
+          activation: False
+          #   type: ReLU
+          #   args: {}
           pool:
             type: MaxPool2d
             args:
@@ -50,9 +50,9 @@ model:
           bias: true
           padding_mode: zeros
           batch_norm: true
-          activation:
-            type: ReLU
-            args: {}
+          activation: False
+          #   type: ReLU
+          #   args: {}
           pool: null
           mode: *mode
 
@@ -64,9 +64,9 @@ model:
           bias: true
           padding_mode: zeros
           batch_norm: true
-          activation:
-            type: ReLU
-            args: {}
+          activation: False
+          #   type: ReLU
+          #   args: {}
           pool:
             type: MaxPool2d
             args:
@@ -82,9 +82,9 @@ model:
           bias: true
           padding_mode: zeros
           batch_norm: true
-          activation:
-            type: ReLU
-            args: {}
+          activation: False
+          #   type: ReLU
+          #   args: {}
           pool: null
           mode: *mode
 
@@ -96,9 +96,9 @@ model:
           bias: true
           padding_mode: zeros
           batch_norm: true
-          activation:
-            type: ReLU
-            args: {}
+          activation: False
+          #   type: ReLU
+          #   args: {}
           pool: null
           mode: *mode
       linear:
@@ -113,9 +113,9 @@ model:
           out_feature: 1024
           bias: true
           batch_norm: true
-          activation:
-            type: ReLU
-            args: {}
+          activation: False
+          #   type: ReLU
+          #   args: {}
           mode: *mode
 
     output_layer:

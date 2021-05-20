@@ -4,7 +4,7 @@ import pytorch_lightning as pl
 import torch
 import torch.nn as nn
 from omegaconf import DictConfig
-from pytorch_lightning.core import LightningModule
+from pytorch_lightning import LightningModule
 from pytorch_lightning.metrics.functional import accuracy
 from torch import optim
 from torch.optim.lr_scheduler import ExponentialLR, ReduceLROnPlateau, StepLR
@@ -24,17 +24,19 @@ class TrainingContainer(LightningModule):
         self.model = model
         self.save_hyperparameters(config)
         self.config = config
+        self.lr = config.optimizer.params.lr
+        self.scheduler_gamma = config.scheduler.params.gamma
 
     def forward(self, x):
         return self.model(x)
 
     def configure_optimizers(self):
         opt_args = dict(self.config.optimizer.params)
-        opt_args.update({"params": self.model.parameters()})
+        opt_args.update({"params": self.model.parameters(), "lr": self.lr})
         opt = load_class(module=optim, name=self.config.optimizer.type, args=opt_args)
 
         scheduler_args = dict(self.config.scheduler.params)
-        scheduler_args.update({"optimizer": opt})
+        scheduler_args.update({"optimizer": opt, "gamma": self.scheduler_gamma})
         scheduler = load_class(
             module=optim.lr_scheduler,
             name=self.config.scheduler.type,

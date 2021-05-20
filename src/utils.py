@@ -14,8 +14,6 @@ from pytorch_lightning.callbacks import Callback, EarlyStopping, ModelCheckpoint
 from pytorch_lightning.loggers import WandbLogger
 from torch.utils.data import DataLoader, Dataset
 
-from src.model import net as Net
-
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 
@@ -29,6 +27,8 @@ def prod(iterable):
 
 
 def build_model(model_conf: DictConfig):
+    from src.model import net as Net
+
     return load_class(
         module=Net, name=model_conf.type, args={"model_config": model_conf}
     )
@@ -128,12 +128,12 @@ def get_early_stopper(early_stopping_config: DictConfig) -> EarlyStopping:
 
 def get_data_loaders(config: DictConfig) -> Tuple[DataLoader, DataLoader]:
 
-    args = dict(config.dataset.params)
+    args = dict(config.data.dataset.params)
 
     args["train"] = True
     args["transform"] = transforms.Compose([transforms.ToTensor()])
     train_dataset = load_class(
-        module=torchvision.datasets, name=config.dataset.type, args=args
+        module=torchvision.datasets, name=config.data.dataset.type, args=args
     )
 
     train_dataloader = DataLoader(
@@ -146,7 +146,7 @@ def get_data_loaders(config: DictConfig) -> Tuple[DataLoader, DataLoader]:
 
     args["train"] = False
     test_dataset = load_class(
-        module=torchvision.datasets, name=config.dataset.type, args=args
+        module=torchvision.datasets, name=config.data.dataset.type, args=args
     )
     test_dataloader = DataLoader(
         dataset=test_dataset,

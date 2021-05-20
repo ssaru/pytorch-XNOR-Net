@@ -1,47 +1,53 @@
-project: &project BinaryConnect
-experiments: &title binarized_conv(deterministic)
+project: &project XNOR
+experiments: &title xnor_linear(deterministic)
 
-training_container:
+dataloader:
+  type: DataLoader
+  params:
+    num_workers: 48
+    batch_size: 200
+
+scheduler:
+  type: ExponentialLR
+  params:
+    gamma: .96
+
+optimizer:
+  type: SGD
+  params:
+    lr: 1e-2
+    momentum: 0
+
+runner:
   type: TrainingContainer
 
-  optimizer:
-    type: SGD
+  trainer:
+    type: Trainer
     params:
-      lr: 1e-2
-      momentum: 0
+      max_epochs: 1000
+      gpus: -1
+      accelerator: ddp
+      fast_dev_run: false
+      amp_level: "02"
+      weights_summary: top
+      reload_dataloaders_every_epoch: false
+      resume_from_checkpoint: null
+      benchmark: false
+      deterministic: true
+      num_sanity_val_steps: 5
+      overfit_batches: 0.0
+      precision: 32
+      profiler: true
 
-  scheduler:
-    type: ExponentialLR
+  earlystopping:
+    type: EarlyStopping
     params:
-      gamma: .96
+      # monitor: val_acc
+      mode: max
+      patience: 10
+      verbose: True
 
-outputs:
-  name: *title
-  project_name: *project
-  output_dir: output/runs
-
-earlystopping:
-  type: EarlyStopping
-  params:
-    # monitor: val_acc
-    mode: max
-    patience: 10
-    verbose: True
-
-trainer:
-  type: Trainer
-  params:
-    max_epochs: 1000
-    gpus: -1
-    accelerator: ddp
-    fast_dev_run: false
-    amp_level: "02"
-    weights_summary: top
-    reload_dataloaders_every_epoch: false
-    resume_from_checkpoint: null
-    benchmark: false
-    deterministic: true
-    num_sanity_val_steps: 5
-    overfit_batches: 0.0
-    precision: 32
-    profiler: true
+  experiments:
+    name: *title
+    project_name: *project
+    output_dir: output/runs

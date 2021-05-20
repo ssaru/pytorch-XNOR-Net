@@ -29,16 +29,17 @@ class BinarizedLinearBlock(nn.Module):
 
         self.batch_norm = batch_norm
         if self.batch_norm:
-            self.batch_norm = nn.BatchNorm1d(num_features=out_feature)
+            self.batch_norm = nn.BatchNorm1d(num_features=in_feature)
 
         self.activation = activation
         if self.activation:
             self.activation = getattr(nn, activation["type"])(**activation["args"])
 
     def forward(self, x):
-        x = self.binarized_linear(x)
         if self.batch_norm:
             x = self.batch_norm(x)
+
+        x = self.binarized_linear(x)
 
         if self.activation:
             x = self.activation(x)

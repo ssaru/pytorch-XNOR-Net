@@ -53,13 +53,12 @@ train_test_case = [
 def test_train_pipeline(fix_seed, config, gpus):
     config = OmegaConf.create(config)
 
-    train_dataloader, test_dataloader = get_data_loaders(config=config.data)
+    train_dataloader, test_dataloader = get_data_loaders(config=config)
     model = build_model(model_conf=config.model)
-    training_container = TrainingContainer(
-        model=model, config=config.training_container
-    )
+    logger.debug(f"config.trainer in test_train_pipeline: {config.keys()}")
+    training_container = TrainingContainer(model=model, config=config)
 
-    trainer_params = dict(config.trainer.params)
+    trainer_params = dict(config.runner.trainer.params)
     trainer_params["limit_train_batches"] = 0.1
     trainer_params["limit_val_batches"] = 0.1
     trainer_params["max_epochs"] = 2
