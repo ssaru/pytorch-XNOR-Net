@@ -33,7 +33,7 @@ runner:
   trainer:
     type: Trainer
     params:
-      max_epochs: 20
+      max_epochs: 10
       gpus: -1
       accelerator: ddp
       fast_dev_run: false
@@ -53,7 +53,7 @@ runner:
     params:
       monitor: valid/accuracy
       mode: max
-      patience: 10
+      patience: 5
       verbose: True
 
   experiments:

@@ -53,8 +53,11 @@ def get_next_version(root_dir: Path) -> str:
             if child_path.is_dir() and child_path.name.startswith(version_prefix):
                 existing_versions.append(int(child_path.name[len(version_prefix) :]))
 
-        last_version = max(existing_versions) if len(existing_versions) > 1 else -1
+        logger.debug(f"existing_versions: {existing_versions}")
+        last_version = max(existing_versions) if len(existing_versions) > 0 else -1
         next_version = last_version + 1
+        logger.debug(f"last_version: {last_version}")
+        logger.debug(f"next_version: {next_version}")
 
     return f"{version_prefix}{next_version:0>3}"
 
