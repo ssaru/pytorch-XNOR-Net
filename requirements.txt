@@ -1,6 +1,6 @@
 black==19.10b0
 isort==5.4.0
-numpy==1.19.0
+numpy==1.22.0
 omegaconf==2.0.1rc11
 pytest==6.2.1
 pytest-cov==2.10.1
