@@ -1,4 +1,4 @@
-black==19.10b0
+black==24.3.0
 isort==5.4.0
 numpy==1.19.0
 omegaconf==2.0.1rc11
